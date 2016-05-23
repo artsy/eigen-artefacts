@@ -1,0 +1,108 @@
+{
+  "name": "Emission",
+  "version": "0.1.0",
+  "summary": "React Native Components used by Eigen.",
+  "homepage": "https://github.com/artsy/emission",
+  "license": "MIT",
+  "authors": {
+    "Eloy Durán": "eloy.de.enige@gmail.com"
+  },
+  "source": {
+    "git": "https://github.com/artsy/emission.git",
+    "tag": "0.1.0"
+  },
+  "platforms": {
+    "ios": "8.0"
+  },
+  "requires_arc": true,
+  "default_subspecs": "All",
+  "subspecs": [
+    {
+      "name": "All",
+      "dependencies": {
+        "Emission/Core": [
+
+        ],
+        "Emission/OpaqueImageViewComponent": [
+
+        ],
+        "Emission/SwitchViewComponent": [
+
+        ],
+        "Emission/SpinnerComponent": [
+
+        ],
+        "Emission/TemporaryAPI": [
+
+        ],
+        "Emission/ViewControllers": [
+
+        ]
+      }
+    },
+    {
+      "name": "Core",
+      "source_files": "Pod/Classes/Core",
+      "resources": "Pod/Assets/Emission.jsbundle",
+      "dependencies": {
+        "React/Core": [
+          ">= 0.24.0-rc5"
+        ],
+        "Artsy+UIFonts": [
+          ">= 1.1.0"
+        ]
+      }
+    },
+    {
+      "name": "TemporaryAPI",
+      "source_files": "Pod/Classes/TemporaryAPI",
+      "dependencies": {
+        "Emission/Core": [
+
+        ]
+      }
+    },
+    {
+      "name": "SwitchViewComponent",
+      "source_files": "Pod/Classes/SwitchViewComponent",
+      "dependencies": {
+        "Emission/Core": [
+
+        ],
+        "Extraction/ARSwitchView": [
+
+        ]
+      }
+    },
+    {
+      "name": "SpinnerComponent",
+      "source_files": "Pod/Classes/SpinnerComponent",
+      "dependencies": {
+        "Emission/Core": [
+
+        ],
+        "Extraction/ARSpinner": [
+
+        ]
+      }
+    },
+    {
+      "name": "OpaqueImageViewComponent",
+      "source_files": "Pod/Classes/OpaqueImageViewComponent",
+      "dependencies": {
+        "SDWebImage": [
+          ">= 3.7.2"
+        ]
+      }
+    },
+    {
+      "name": "ViewControllers",
+      "source_files": "Pod/Classes/ViewControllers",
+      "dependencies": {
+        "Emission/Core": [
+
+        ]
+      }
+    }
+  ]
+}

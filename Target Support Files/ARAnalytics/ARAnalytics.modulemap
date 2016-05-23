@@ -1,0 +1,6 @@
+framework module ARAnalytics {
+  umbrella header "ARAnalytics-umbrella.h"
+
+  export *
+  module * { export * }
+}

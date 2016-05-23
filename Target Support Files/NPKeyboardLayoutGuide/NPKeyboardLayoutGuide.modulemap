@@ -1,0 +1,6 @@
+framework module NPKeyboardLayoutGuide {
+  umbrella header "NPKeyboardLayoutGuide-umbrella.h"
+
+  export *
+  module * { export * }
+}

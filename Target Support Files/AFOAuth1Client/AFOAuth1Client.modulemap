@@ -1,0 +1,6 @@
+framework module AFOAuth1Client {
+  umbrella header "AFOAuth1Client-umbrella.h"
+
+  export *
+  module * { export * }
+}

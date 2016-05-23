@@ -1,0 +1,6 @@
+framework module ALPValidator {
+  umbrella header "ALPValidator-umbrella.h"
+
+  export *
+  module * { export * }
+}

@@ -1,0 +1,6 @@
+framework module JSDecoupledAppDelegate {
+  umbrella header "JSDecoupledAppDelegate-umbrella.h"
+
+  export *
+  module * { export * }
+}

@@ -1,0 +1,6 @@
+framework module Extraction {
+  umbrella header "Extraction-umbrella.h"
+
+  export *
+  module * { export * }
+}

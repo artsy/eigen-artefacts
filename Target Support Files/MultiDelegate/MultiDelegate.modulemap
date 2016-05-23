@@ -1,0 +1,6 @@
+framework module MultiDelegate {
+  umbrella header "MultiDelegate-umbrella.h"
+
+  export *
+  module * { export * }
+}

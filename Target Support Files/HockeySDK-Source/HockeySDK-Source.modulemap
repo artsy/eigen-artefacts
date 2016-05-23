@@ -1,0 +1,6 @@
+framework module HockeySDK_Source {
+  umbrella header "HockeySDK-Source-umbrella.h"
+
+  export *
+  module * { export * }
+}

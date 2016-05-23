@@ -1,0 +1,6 @@
+framework module Aerodramus {
+  umbrella header "Aerodramus-umbrella.h"
+
+  export *
+  module * { export * }
+}

@@ -1,0 +1,6 @@
+framework module MARKRangeSlider {
+  umbrella header "MARKRangeSlider-umbrella.h"
+
+  export *
+  module * { export * }
+}

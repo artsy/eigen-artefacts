@@ -1,0 +1,10 @@
+CONFIGURATION_BUILD_DIR = $PODS_CONFIGURATION_BUILD_DIR/HockeySDK-Source
+FRAMEWORK_SEARCH_PATHS = $(inherited) "${PODS_ROOT}/HockeySDK-Source/Vendor"
+GCC_PREPROCESSOR_DEFINITIONS = $(inherited) COCOAPODS=1 $(inherited) BITHOCKEY_VERSION="@\"3.8.5\"" BITHOCKEY_C_VERSION="\"3.8.5\"" BITHOCKEY_BUILD="@\"57\"" BITHOCKEY_C_BUILD="\"57\""
+HEADER_SEARCH_PATHS = "${PODS_ROOT}/Headers/Private" "${PODS_ROOT}/Headers/Public"
+OTHER_LDFLAGS = -l"c++" -framework "AssetsLibrary" -framework "CoreGraphics" -framework "CoreText" -framework "CrashReporter" -framework "MobileCoreServices" -framework "QuartzCore" -framework "QuickLook" -framework "Security" -framework "SystemConfiguration" -framework "UIKit"
+PODS_BUILD_DIR = $BUILD_DIR
+PODS_CONFIGURATION_BUILD_DIR = $PODS_BUILD_DIR/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)
+PODS_ROOT = ${SRCROOT}
+PRODUCT_BUNDLE_IDENTIFIER = org.cocoapods.${PRODUCT_NAME:rfc1034identifier}
+SKIP_INSTALL = YES

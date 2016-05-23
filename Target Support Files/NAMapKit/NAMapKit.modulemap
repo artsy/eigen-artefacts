@@ -1,0 +1,6 @@
+framework module NAMapKit {
+  umbrella header "NAMapKit-umbrella.h"
+
+  export *
+  module * { export * }
+}

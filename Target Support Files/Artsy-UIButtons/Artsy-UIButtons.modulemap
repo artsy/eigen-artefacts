@@ -1,0 +1,6 @@
+framework module Artsy_UIButtons {
+  umbrella header "Artsy-UIButtons-umbrella.h"
+
+  export *
+  module * { export * }
+}

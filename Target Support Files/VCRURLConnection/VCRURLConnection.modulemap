@@ -1,0 +1,6 @@
+framework module VCRURLConnection {
+  umbrella header "VCRURLConnection-umbrella.h"
+
+  export *
+  module * { export * }
+}

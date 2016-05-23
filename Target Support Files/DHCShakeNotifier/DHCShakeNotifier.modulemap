@@ -1,0 +1,6 @@
+framework module DHCShakeNotifier {
+  umbrella header "DHCShakeNotifier-umbrella.h"
+
+  export *
+  module * { export * }
+}

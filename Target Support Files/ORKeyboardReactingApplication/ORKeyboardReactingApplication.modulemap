@@ -1,0 +1,6 @@
+framework module ORKeyboardReactingApplication {
+  umbrella header "ORKeyboardReactingApplication-umbrella.h"
+
+  export *
+  module * { export * }
+}

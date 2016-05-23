@@ -1,0 +1,7 @@
+#ifdef __OBJC__
+#import <UIKit/UIKit.h>
+#endif
+
+#define AR_ADJUST_EXISTS 1
+#define AR_HOCKEYAPP_EXISTS 1
+#define AR_SEGMENTIO_EXISTS 1

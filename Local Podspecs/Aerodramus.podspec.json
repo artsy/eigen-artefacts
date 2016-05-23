@@ -1,0 +1,25 @@
+{
+  "name": "Aerodramus",
+  "version": "0.1.0",
+  "summary": "Echo Communication Tools",
+  "description": "Allows connection to the Echo API server.",
+  "homepage": "https://github.com/Artsy/Aerodramus",
+  "license": "MIT",
+  "authors": {
+    "Orta Therox": "orta.therox@gmail.com"
+  },
+  "source": {
+    "git": "https://github.com/Artsy/Aerodramus.git",
+    "tag": "0.1.0"
+  },
+  "platforms": {
+    "ios": "7.0"
+  },
+  "requires_arc": true,
+  "source_files": "Pod/Classes/**/*",
+  "dependencies": {
+    "ISO8601DateFormatter": [
+
+    ]
+  }
+}

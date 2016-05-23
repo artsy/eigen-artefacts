@@ -1,0 +1,6 @@
+framework module KSDeferred {
+  umbrella header "KSDeferred-umbrella.h"
+
+  export *
+  module * { export * }
+}
