@@ -120,10 +120,6 @@
 #import "RCTTextManager.h"
 #import "RCTTextView.h"
 #import "RCTTextViewManager.h"
-#import "RCTSRWebSocket.h"
-#import "RCTWebSocketExecutor.h"
-#import "RCTWebSocketManager.h"
-#import "RCTWebSocketModule.h"
 
 FOUNDATION_EXPORT double ReactVersionNumber;
 FOUNDATION_EXPORT const unsigned char ReactVersionString[];
