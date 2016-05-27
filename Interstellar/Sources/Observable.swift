@@ -18,7 +18,8 @@ public struct ObservingOptions: OptionSetType {
 
 public final class Observable<T> {
     private typealias Observer = T->Void
-    private var observers = Dictionary<ObserverToken<T>, Observer>()
+    private typealias ObserverTokenType = ObserverToken<T>
+    private var observers = [ObserverTokenType: Observer]()
     private var lastValue: T?
     public let options: ObservingOptions
     private let mutex = Mutex()
