@@ -1,6 +1,7 @@
 #import <UIKit/UIKit.h>
 
 #import "AREmission.h"
+#import "AREventsModule.h"
 #import "ARSwitchBoardModule.h"
 #import "AROpaqueImageShadowView.h"
 #import "AROpaqueImageView.h"
