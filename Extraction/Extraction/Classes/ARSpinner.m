@@ -9,6 +9,7 @@
 
 @interface ARSpinner ()
 @property (nonatomic, strong) UIView *spinnerView;
+@property (nonatomic, assign) NSInteger deferredAnimationCount;
 @end
 
 
@@ -58,7 +59,7 @@
 {
     self.alpha = 0;
     [self startAnimating];
-
+    
     [UIView animateIf:animated duration:0.3:^{
         self.alpha = 1;
     } completion:completion];
@@ -68,7 +69,7 @@
 {
     self.alpha = 1;
     [self stopAnimating];
-
+    
     [UIView animateIf:animated duration:0.3:^{
         self.alpha = 0;
     } completion:completion];
@@ -79,9 +80,24 @@
     [self animate:LONG_MAX];
 }
 
+// Added because sometimes the spinner's animation block gets called
+// before it's been added to the super view
+// in which case we want to animate again
+- (void)didMoveToSuperview
+{
+    [super didMoveToSuperview];
+    if (self.superview && self.deferredAnimationCount) {
+        [self ar_startSpinning:self.deferredAnimationCount];
+    }
+}
+
 - (void)animate:(NSInteger)times
 {
-    [self ar_startSpinning:times];
+    if (self.superview) {
+        [self ar_startSpinning:times];
+    } else {
+        self.deferredAnimationCount = times;
+    }
 }
 
 - (void)stopAnimating
