@@ -1,6 +1,5 @@
 #import <UIKit/UIKit.h>
 
-
 @interface UIView (ARSpinner)
 
 /// Keeps a view spinning for a _very_ long time.
@@ -13,3 +12,4 @@
 - (void)ar_stopSpinningInstantly:(BOOL)instant;
 
 @end
+

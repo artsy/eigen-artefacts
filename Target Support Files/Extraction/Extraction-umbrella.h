@@ -1,5 +1,6 @@
 #import <UIKit/UIKit.h>
 
+#import "ARAnimationContinuation.h"
 #import "ARSpinner.h"
 #import "ARSwitchView.h"
 #import "UIView+ARSpinner.h"
