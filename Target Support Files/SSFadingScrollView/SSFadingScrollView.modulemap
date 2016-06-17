@@ -1,0 +1,6 @@
+framework module SSFadingScrollView {
+  umbrella header "SSFadingScrollView-umbrella.h"
+
+  export *
+  module * { export * }
+}
