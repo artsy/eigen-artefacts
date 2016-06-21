@@ -161,7 +161,6 @@
 		11283A3B6BE3B525627718F214E9DB2E /* RCTConvert+CoreLocation.m in Sources */ = {isa = PBXBuildFile; fileRef = 55A45E449FE58A75D908F1CC015AE0C9 /* RCTConvert+CoreLocation.m */; settings = {COMPILER_FLAGS = "-w -Xanalyzer -analyzer-disable-all-checks"; }; };
 		112A9DF39C4C621A14B641805EBFC980 /* ARTile.h in Headers */ = {isa = PBXBuildFile; fileRef = CA03C117CF636BA8D81427B2C1EEC5D3 /* ARTile.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		112D96FF5F256CA87A66A4F60C33C3A5 /* XCTestSuite+QuickTestSuiteBuilder.m in Sources */ = {isa = PBXBuildFile; fileRef = 2E199DB715B85CCC0F7D90FA2F61D3D6 /* XCTestSuite+QuickTestSuiteBuilder.m */; settings = {COMPILER_FLAGS = "-w -Xanalyzer -analyzer-disable-all-checks"; }; };
-		1140E08C9DF506378A27D94722F31EE8 /* Emission.jsbundle in Resources */ = {isa = PBXBuildFile; fileRef = A32F167B8B02B432532EDC94BCD24CC9 /* Emission.jsbundle */; };
 		1201B9F16E03B61629C732BF8DA39888 /* UIView+FLKAutoLayout.h in Headers */ = {isa = PBXBuildFile; fileRef = 2EC8AD02FF7C83113D406895333D08CC /* UIView+FLKAutoLayout.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		125DC3D543272F5434A682FBB904F186 /* RCTWebView.m in Sources */ = {isa = PBXBuildFile; fileRef = A664129D8726A57773EF909927B04823 /* RCTWebView.m */; settings = {COMPILER_FLAGS = "-w -Xanalyzer -analyzer-disable-all-checks"; }; };
 		126CC895015196EDC7F3B5251B4F2E97 /* SPTSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 2050783DFF7F421ABD9D11CB2E20924B /* SPTSpec.m */; settings = {COMPILER_FLAGS = "-w -Xanalyzer -analyzer-disable-all-checks"; }; };
@@ -1652,6 +1651,7 @@
 		DAFCCFA628A0C2CCE451AE6DEBE64563 /* NAPinAnnotationCallOutView.h in Headers */ = {isa = PBXBuildFile; fileRef = 0B8BABBE6BC1F06FB1CEDA5533574788 /* NAPinAnnotationCallOutView.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		DB06DB4CBB20752CE1A8D56326074A3F /* SEGAnalyticsUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 2C15DBAFFA008381955E7F199F0289CB /* SEGAnalyticsUtils.m */; settings = {COMPILER_FLAGS = "-w -Xanalyzer -analyzer-disable-all-checks"; }; };
 		DB2F40BE9F40BB497E1F4E3C4FBDA794 /* MobileCoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 34CE52A039362A8C97F1D24B869A4C56 /* MobileCoreServices.framework */; };
+		DB4CCCA4FC1DEED774D7CA7A7FFD6FBB /* Emission.js in Resources */ = {isa = PBXBuildFile; fileRef = 3B1E883D3FF965422307811F1265803E /* Emission.js */; };
 		DB57A58826BC62DB98779D02410B82C6 /* ALPStringValidator.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B55667AC18233F4C05E77CD9E75ABAD /* ALPStringValidator.m */; settings = {COMPILER_FLAGS = "-w -Xanalyzer -analyzer-disable-all-checks"; }; };
 		DB59F4292162E8D97C2EFF40AC389C06 /* OCMPassByRefSetter.h in Headers */ = {isa = PBXBuildFile; fileRef = 07FDD29BB9994C5CA17D047465E066F7 /* OCMPassByRefSetter.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		DB678A5FBB401F0747251B033811DE87 /* OCMBoxedReturnValueProvider.h in Headers */ = {isa = PBXBuildFile; fileRef = CB3CE106797E3057C50B904E38695637 /* OCMBoxedReturnValueProvider.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -3216,6 +3216,7 @@
 		3ABA4C9036F400E80D15F96B6D133A07 /* MultiDelegate.modulemap */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = "sourcecode.module-map"; path = MultiDelegate.modulemap; sourceTree = "<group>"; };
 		3AC4E00144382D1052DEB180DB42D335 /* ARTemporaryAPIModule.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = ARTemporaryAPIModule.h; path = Pod/Classes/TemporaryAPI/ARTemporaryAPIModule.h; sourceTree = "<group>"; };
 		3B1DD281FDE398029900FD360337CCF5 /* BITRectangleImageAnnotation.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = BITRectangleImageAnnotation.m; path = Classes/BITRectangleImageAnnotation.m; sourceTree = "<group>"; };
+		3B1E883D3FF965422307811F1265803E /* Emission.js */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.javascript; name = Emission.js; path = Pod/Assets/Emission.js; sourceTree = "<group>"; };
 		3B24FADCC810222DC223BB0AB2C7CBD0 /* ALPValidatorRegularExpressionRule.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = ALPValidatorRegularExpressionRule.h; path = ALPValidator/ALPValidatorRegularExpressionRule.h; sourceTree = "<group>"; };
 		3B55667AC18233F4C05E77CD9E75ABAD /* ALPStringValidator.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = ALPStringValidator.m; path = ALPValidator/ALPStringValidator.m; sourceTree = "<group>"; };
 		3B8CBEE76E3662A6F123094F467C65D8 /* RACObjCRuntime.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = RACObjCRuntime.h; path = ReactiveCocoaFramework/ReactiveCocoa/RACObjCRuntime.h; sourceTree = "<group>"; };
@@ -4073,7 +4074,6 @@
 		A2E93B098B8C95F9EA713E9452BF8167 /* Expecta_Snapshots.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Expecta_Snapshots.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A30D817558226D067891C09145BAE95F /* ALPValidator.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = ALPValidator.m; path = ALPValidator/ALPValidator.m; sourceTree = "<group>"; };
 		A32001649BFE7683A4224CF9148E2A72 /* BITFeedbackMessageAttachment.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = BITFeedbackMessageAttachment.m; path = Classes/BITFeedbackMessageAttachment.m; sourceTree = "<group>"; };
-		A32F167B8B02B432532EDC94BCD24CC9 /* Emission.jsbundle */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = Emission.jsbundle; path = Pod/Assets/Emission.jsbundle; sourceTree = "<group>"; };
 		A333F292989224B39512037B67E5AF3B /* EXPMatcherHelpers.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = EXPMatcherHelpers.h; path = Expecta/Matchers/EXPMatcherHelpers.h; sourceTree = "<group>"; };
 		A3652C752D6A9996AB42B84494EDF778 /* EXPMatchers+equal.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = "EXPMatchers+equal.m"; path = "Expecta/Matchers/EXPMatchers+equal.m"; sourceTree = "<group>"; };
 		A376FF27D2E87D1F9E6D4099886FC44D /* rangeSliderTrackRange@2x.png */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = image.png; name = "rangeSliderTrackRange@2x.png"; path = "Resources/rangeSliderTrackRange@2x.png"; sourceTree = "<group>"; };
@@ -7257,6 +7257,14 @@
 			name = Mocks;
 			sourceTree = "<group>";
 		};
+		6D691D0D6CA2EF8D6DA7D28AB38F760D /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				3B1E883D3FF965422307811F1265803E /* Emission.js */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
 		6EFDBD983D2ABAECF7524409C0586F0D /* FBSnapshotTestCase */ = {
 			isa = PBXGroup;
 			children = (
@@ -7294,7 +7302,7 @@
 				3AC4E00144382D1052DEB180DB42D335 /* ARTemporaryAPIModule.h */,
 				FA6428040EC1B274453C5C165FD5347A /* ARTemporaryAPIModule.m */,
 				2EC5A74B777CA604BB20111571E73E18 /* RCTScrollView+EnclosingScrollView.m */,
-				8961B140D426DA7D539A63C5FB4F055C /* Resources */,
+				6D691D0D6CA2EF8D6DA7D28AB38F760D /* Resources */,
 				F3A88177FA5636526B25A306BCB8377D /* Support Files */,
 			);
 			path = Emission;
@@ -7569,14 +7577,6 @@
 				7636B2F324E6B128E1564D0AEEBFEE27 /* Support Files */,
 			);
 			path = ARCollectionViewMasonryLayout;
-			sourceTree = "<group>";
-		};
-		8961B140D426DA7D539A63C5FB4F055C /* Resources */ = {
-			isa = PBXGroup;
-			children = (
-				A32F167B8B02B432532EDC94BCD24CC9 /* Emission.jsbundle */,
-			);
-			name = Resources;
 			sourceTree = "<group>";
 		};
 		89F8653B8516060CB48A93556F71ED10 /* Support Files */ = {
@@ -10619,7 +10619,7 @@
 				3F43BAD404BFF1F0445B76B30A7B98F6 /* Sources */,
 				B5920214F9DA6B678322AA336F5A5D01 /* Frameworks */,
 				F8E6A6B8DDB497993750D28C42917A9A /* Headers */,
-				D236FA3D8DB1156FD9E27C9ABE185FC1 /* Resources */,
+				4A91776EBFAB6C82A2FAE5BACC344404 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -12133,6 +12133,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4A91776EBFAB6C82A2FAE5BACC344404 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DB4CCCA4FC1DEED774D7CA7A7FFD6FBB /* Emission.js in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		65485A739B241E767C53026667FA6DDA /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -12239,14 +12247,6 @@
 			files = (
 				946A9709473D1DE8C91B10BA1F28C7A7 /* Chevron_Black.png in Resources */,
 				0EFCAC33286BE5413C3DF9DA30D35985 /* Chevron_Black@2x.png in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		D236FA3D8DB1156FD9E27C9ABE185FC1 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				1140E08C9DF506378A27D94722F31EE8 /* Emission.jsbundle in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
