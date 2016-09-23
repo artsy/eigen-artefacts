@@ -4,6 +4,34 @@
 #import "ARTemporaryAPIModule.h"
 
 #import <React/RCTBridge.h>
+#import <React/RCTBridgeModule.h>
+
+
+@interface AREmissionConfiguration : NSObject <RCTBridgeModule>
+@property (nonatomic, strong, readwrite) NSString *userID;
+@property (nonatomic, strong, readwrite) NSString *authenticationToken;
+@property (nonatomic, assign, readwrite) BOOL useStagingEnvironment;
+@end
+
+@implementation AREmissionConfiguration
+
+RCT_EXPORT_MODULE(Emission);
+
+- (NSDictionary *)constantsToExport
+{
+  return @{
+    @"userID": self.userID,
+    @"authenticationToken": self.authenticationToken,
+    @"useStagingEnvironment": @(self.useStagingEnvironment),
+  };
+}
+
+@end
+
+
+@interface AREmission ()
+@property (nonatomic, strong, readwrite) AREmissionConfiguration *configurationModule;
+@end
 
 @implementation AREmission
 
@@ -16,29 +44,38 @@ static AREmission *_sharedInstance = nil;
 
 + (instancetype)sharedInstance;
 {
-  if (_sharedInstance == nil) {
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-      _sharedInstance = [self new];
-    });
-  }
+  NSParameterAssert(_sharedInstance);
   return _sharedInstance;
 }
 
-- (instancetype)init;
+- (instancetype)initWithUserID:(NSString *)userID
+           authenticationToken:(NSString *)authenticationToken;
 {
-  return [self initWithPackagerURL:nil];
+  return [self initWithUserID:userID
+          authenticationToken:authenticationToken
+                  packagerURL:nil
+        useStagingEnvironment:NO];
 }
 
-- (instancetype)initWithPackagerURL:(NSURL *)packagerURL;
+- (instancetype)initWithUserID:(NSString *)userID
+           authenticationToken:(NSString *)authenticationToken
+                   packagerURL:(nullable NSURL *)packagerURL
+         useStagingEnvironment:(BOOL)useStagingEnvironment;
 {
   if ((self = [super init])) {
     _eventsModule = [AREventsModule new];
     _switchBoardModule = [ARSwitchBoardModule new];
     _APIModule = [ARTemporaryAPIModule new];
+    
+    _configurationModule = [AREmissionConfiguration new];
+    _configurationModule.userID = userID;
+    _configurationModule.authenticationToken = authenticationToken;
+    _configurationModule.useStagingEnvironment = useStagingEnvironment;
+
+    NSArray *modules = @[_APIModule, _configurationModule, _eventsModule, _switchBoardModule];
 
     _bridge = [[RCTBridge alloc] initWithBundleURL:(packagerURL ?: self.releaseBundleURL)
-                                    moduleProvider:^{ return @[_eventsModule, _switchBoardModule, _APIModule]; }
+                                    moduleProvider:^{ return modules; }
                                      launchOptions:nil];
   }
   return self;

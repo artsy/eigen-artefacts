@@ -2,8 +2,16 @@
 
 [React Native] Components used by [Eigen].
 
-[React Native]: http://facebook.github.io/react-native/
-[Eigen]: https://github.com/artsy/eigen
+### Meta
+
+* __State:__ production
+* __Point People:__ [@sarahscott](https://github.com/sarahscott), [@alloy](https://github.com/alloy)
+
+This is a core [Artsy Mobile](https://github.com/artsy/mobile) OSS project, along with [Energy](https://github.com/artsy/energy), [Eidolon](https://github.com/artsy/eidolon), [Eigen](https://github.com/artsy/eigen) and [Emergence](https://github.com/artsy/emergence).
+
+Don't know what Artsy is? Check out [this overview](https://github.com/artsy/meta/blob/master/meta/what_is_artsy.md) and [more](https://github.com/artsy/meta/blob/master/README.md), or read our objc.io on [team culture](https://www.objc.io/issues/22-scale/artsy).
+
+Want to know more about Emission? Read the [mobile](http://artsy.github.io/blog/categories/mobile/) blog posts, or [Emission's](http://artsy.github.io/blog/categories/emission/) / [React Native's](http://artsy.github.io/blog/categories/reactnative/) specifically.
 
 ### Installation
 
@@ -13,20 +21,29 @@
    * `$ brew link pcre`
    * `$ brew install watchman --HEAD`
 3. Install NPM modules: `$ npm install`
-4. Install Pods: `cd Example && pod install`
+4. Install Pods: `$ cd Example && pod install`
 
 ### Development
 
+### Using VS Code as an IDE
+
+There is a full document covering [our setup here](docs/vscode.md).
+
+### Vanilla Commands
+
 1. Run `$ npm start` from the top directory, which will:
-   - Clean the example app’s Xcode build dir.
-   - Start the example app’s React Native packager.
+   * Clean the example app’s Xcode build dir.
+   * Start the example app’s React Native packager.
+   * Start the React Storybooks environment.
 
 2. Now from Xcode you can run the app in `Example/Emission.xcworkspace`.
 
-3. We vendor some data from other repositories that you will sometimes need to update. You can either update all of them
+### Updating Dependencies
+
+1. We vendor some data from other repositories that you will sometimes need to update. You can either update all of them
    with `$ npm run sync-externals` or individually:
-   - The GraphQL schema of metaphysics that Relay uses to generate queries from: `$ npm run sync-schema`
-   - The colors defined in Artsy’s style-guide: `$ npm run sync-colors`
+   * The GraphQL schema of metaphysics that Relay uses to generate queries from: `$ npm run sync-schema`
+   * The colors defined in Artsy’s style-guide: `$ npm run sync-colors`
 
 ### Using Relay
 
@@ -63,6 +80,12 @@ Unhandled JS Exception: RelayQL: Unexpected invocation at runtime. Either the Ba
 failed to identify this call site. Make sure it is being used verbatim as `Relay.QL`
 ```
 
+### Deployment
+
+Currently deploying the emission example app to Testflight is done manually.
+
+On the other hand, our JS is deployed from master to our dev build on Testflight [via AppHub](https://github.com/artsy/emission/pull/263).
+
 ### Resources
 
 * React Native:
@@ -77,9 +100,9 @@ failed to identify this call site. Make sure it is being used verbatim as `Relay
   - https://github.com/fbsamples/f8app/
 
 * Testing:
-  - https://mochajs.org
-  - http://chaijs.com/guide/styles/#expect
-  - https://github.com/airbnb/enzyme
+  - https://facebook.github.io/jest/
+  - https://facebook.github.io/jest/docs/api.html#content
+  - https://facebook.github.io/jest/blog/2016/07/27/jest-14.html
 
 * Flow:
   - http://flowtype.org/docs/type-annotations.html
@@ -89,3 +112,11 @@ failed to identify this call site. Make sure it is being used verbatim as `Relay
 * Flexbox:
   - https://css-tricks.com/snippets/css/a-guide-to-flexbox/
   - http://blog.krawaller.se/posts/a-react-app-demonstrating-css3-flexbox/
+
+* React Native Storybooks
+  - https://github.com/kadirahq/react-native-storybook
+  - https://github.com/kadirahq/react-storybook
+
+
+[React Native]: http://facebook.github.io/react-native/
+[Eigen]: https://github.com/artsy/eigen
