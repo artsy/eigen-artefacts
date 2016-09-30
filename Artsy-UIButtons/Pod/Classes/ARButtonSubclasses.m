@@ -410,6 +410,14 @@ const CGFloat ARButtonAnimationDuration = 0.15;
     [self setTitleColor:[UIColor artsyPurpleRegular] forState:UIControlStateSelected];
 }
 
+- (void)setSelected:(BOOL)selected
+{
+    [super setSelected:selected];
+    if (self.imageView) {
+        self.tintColor = selected ? [UIColor artsyPurpleRegular] : [UIColor blackColor];
+    }
+}
+
 @end
 
 @implementation ARHeroUnitButton
