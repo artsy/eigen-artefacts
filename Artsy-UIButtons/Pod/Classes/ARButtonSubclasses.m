@@ -405,22 +405,9 @@ const CGFloat ARButtonAnimationDuration = 0.15;
 - (void)setup
 {
     [super setup];
-    self.alpha = 0.7;
     self.titleLabel.font = [UIFont sansSerifFontWithSize:12];
-    [self setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-}
-
-- (void)setSelected:(BOOL)selected
-{
-    [self setSelected:selected animated:self.shouldAnimateStateChange];
-}
-
-- (void)setSelected:(BOOL)selected animated:(BOOL)animated
-{
-    [super setSelected:selected];
-    [UIView animateIf:animated duration:ARButtonAnimationDuration :^{
-        self.alpha = selected ? 1 : 0.7;
-    }];
+    [self setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+    [self setTitleColor:[UIColor artsyPurpleRegular] forState:UIControlStateSelected];
 }
 
 @end
