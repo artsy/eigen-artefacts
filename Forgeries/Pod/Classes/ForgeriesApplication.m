@@ -1,7 +1,5 @@
 #import "Forgeries-Macros.h"
 #import "ForgeriesApplication.h"
-#import <OCMock/OCMock.h>
-
 
 @interface ForgeriesApplication()
 @property(nonatomic,getter=isStatusBarHidden) BOOL statusBarHidden;
@@ -14,10 +12,13 @@
 /// We can't call the super init function
 /// or it will raise
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wobjc-designated-initializers"
 - (instancetype)init
 {
     return self;
 }
+#pragma clang diagnostic pop
 
 - (BOOL)statusBarHidden
 {
