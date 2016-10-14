@@ -3,6 +3,7 @@
 #import "AREmission.h"
 #import "AREventsModule.h"
 #import "ARSwitchBoardModule.h"
+#import "ARRefineOptionsModule.h"
 #import "ARLoadFailureViewManager.h"
 #import "AROpaqueImageShadowView.h"
 #import "AROpaqueImageView.h"

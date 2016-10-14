@@ -21,7 +21,7 @@
 
 @interface ARLoadFailureView ()
 @property (readonly, nonatomic, strong) ARMenuButton *retryButton;
-@property (readwrite, nonatomic, assign) BOOL stopRotating;
+@property (readwrite, nonatomic, assign) BOOL shouldRotate;
 @end
 
 
@@ -80,6 +80,7 @@
 
 - (IBAction)retry:(id)sender;
 {
+  self.shouldRotate = YES;
   [self rotate];
   [self.delegate loadFailureViewDidRequestRetry:self];
 }
@@ -105,13 +106,7 @@
                             }
                             completion:^(BOOL _) {
                               __strong __typeof(weakSelf) strongSelf = weakSelf;
-                              if (strongSelf) {
-                                if (strongSelf.stopRotating) {
-                                  strongSelf.stopRotating = NO;
-                                } else {
-                                  [strongSelf rotate];
-                                }
-                              }
+                              if (strongSelf && strongSelf.shouldRotate) [strongSelf rotate];
                             }];
 }
 
@@ -119,7 +114,7 @@
 // tried when a connection fails immediately again.
 - (void)retryFailed;
 {
-  self.stopRotating = YES;
+  self.shouldRotate = NO;
 }
 
 @end
