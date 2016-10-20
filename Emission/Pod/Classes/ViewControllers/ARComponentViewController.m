@@ -26,20 +26,21 @@
 - (void)viewDidLoad;
 {
   [super viewDidLoad];
-  
+  self.automaticallyAdjustsScrollViewInsets = NO;
+
   RCTRootView *rootView = [[RCTRootView alloc] initWithBridge:self.emission.bridge
                                                    moduleName:self.moduleName
                                             initialProperties:self.initialProperties];
   [self.view addSubview:rootView];
   rootView.reactViewController = self;
-  
+
   rootView.translatesAutoresizingMaskIntoConstraints = NO;
   [self.view addConstraints:@[
     [NSLayoutConstraint constraintWithItem:rootView
                                  attribute:NSLayoutAttributeTop
                                  relatedBy:NSLayoutRelationEqual
-                                    toItem:self.topLayoutGuide
-                                 attribute:NSLayoutAttributeBottom
+                                    toItem:self.view
+                                 attribute:NSLayoutAttributeTop
                                 multiplier:1
                                   constant:0],
     [NSLayoutConstraint constraintWithItem:rootView
