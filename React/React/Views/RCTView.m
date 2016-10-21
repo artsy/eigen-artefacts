@@ -16,69 +16,6 @@
 #import "RCTUtils.h"
 #import "UIView+React.h"
 
-@implementation UIView (RCTViewUnmounting)
-
-- (void)react_remountAllSubviews
-{
-  // Normal views don't support unmounting, so all
-  // this does is forward message to our subviews,
-  // in case any of those do support it
-
-  for (UIView *subview in self.subviews) {
-    [subview react_remountAllSubviews];
-  }
-}
-
-- (void)react_updateClippedSubviewsWithClipRect:(CGRect)clipRect relativeToView:(UIView *)clipView
-{
-  // Even though we don't support subview unmounting
-  // we do support clipsToBounds, so if that's enabled
-  // we'll update the clipping
-
-  if (self.clipsToBounds && self.subviews.count > 0) {
-    clipRect = [clipView convertRect:clipRect toView:self];
-    clipRect = CGRectIntersection(clipRect, self.bounds);
-    clipView = self;
-  }
-
-  // Normal views don't support unmounting, so all
-  // this does is forward message to our subviews,
-  // in case any of those do support it
-
-  for (UIView *subview in self.subviews) {
-    [subview react_updateClippedSubviewsWithClipRect:clipRect relativeToView:clipView];
-  }
-}
-
-- (UIView *)react_findClipView
-{
-  UIView *testView = self;
-  UIView *clipView = nil;
-  CGRect clipRect = self.bounds;
-  // We will only look for a clipping view up the view hierarchy until we hit the root view.
-  while (testView) {
-    if (testView.clipsToBounds) {
-      if (clipView) {
-        CGRect testRect = [clipView convertRect:clipRect toView:testView];
-        if (!CGRectContainsRect(testView.bounds, testRect)) {
-          clipView = testView;
-          clipRect = CGRectIntersection(testView.bounds, testRect);
-        }
-      } else {
-        clipView = testView;
-        clipRect = [self convertRect:self.bounds toView:clipView];
-      }
-    }
-    if ([testView isReactRootView]) {
-      break;
-    }
-    testView = testView.superview;
-  }
-  return clipView ?: self.window;
-}
-
-@end
-
 static NSString *RCTRecursiveAccessibilityLabel(UIView *view)
 {
   NSMutableString *str = [NSMutableString stringWithString:@""];
@@ -215,6 +152,30 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:unused)
   }
 }
 
+- (void)didUpdateReactSubviews
+{
+  if (!_removeClippedSubviews) {
+    [super didUpdateReactSubviews];
+    return;
+  }
+
+  // We have to set clipping view to all new children. New children doesn't have reactClippingSuperview set yet.
+  for (UIView *view in self.sortedReactSubviews) {
+    if ([view conformsToProtocol:@protocol(RCTClippableView)]) {
+      UIView<RCTClippableView> *clippableView = (UIView<RCTClippableView> *)view;
+      if (!clippableView.reactClippingSuperview) {
+        [clippableView setReactClippingSuperview:self];
+        [self reclipView:clippableView];
+      }
+    } else {
+      if (!view.superview) {
+        [self addSubview:view];
+      }
+    }
+  }
+
+}
+
 - (NSString *)description
 {
   NSString *superDescription = super.description;
@@ -271,112 +232,70 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:unused)
   return UIEdgeInsetsZero;
 }
 
-#pragma mark - View unmounting
+#pragma mark - RCTClippingView
 
-- (void)react_remountAllSubviews
-{
-  if (_removeClippedSubviews) {
-    for (UIView *view in self.sortedReactSubviews) {
-      if (view.superview != self) {
-        [self addSubview:view];
-        [view react_remountAllSubviews];
-      }
-    }
-  } else {
-    // If _removeClippedSubviews is false, we must already be showing all subviews
-    [super react_remountAllSubviews];
-  }
-}
-
-- (void)react_updateClippedSubviewsWithClipRect:(CGRect)clipRect relativeToView:(UIView *)clipView
-{
-  // TODO (#5906496): for scrollviews (the primary use-case) we could
-  // optimize this by only doing a range check along the scroll axis,
-  // instead of comparing the whole frame
-
-  if (!_removeClippedSubviews) {
-    // Use default behavior if unmounting is disabled
-    return [super react_updateClippedSubviewsWithClipRect:clipRect relativeToView:clipView];
-  }
-
-  if (self.reactSubviews.count == 0) {
-    // Do nothing if we have no subviews
-    return;
-  }
-
-  if (CGSizeEqualToSize(self.bounds.size, CGSizeZero)) {
-    // Do nothing if layout hasn't happened yet
-    return;
-  }
-
-  // Convert clipping rect to local coordinates
-  clipRect = [clipView convertRect:clipRect toView:self];
-  clipRect = CGRectIntersection(clipRect, self.bounds);
-  clipView = self;
-
-  // Mount / unmount views
-  for (UIView *view in self.sortedReactSubviews) {
-    if (!CGRectIsEmpty(CGRectIntersection(clipRect, view.frame))) {
-
-      // View is at least partially visible, so remount it if unmounted
-      [self addSubview:view];
-
-      // Then test its subviews
-      if (CGRectContainsRect(clipRect, view.frame)) {
-        // View is fully visible, so remount all subviews
-        [view react_remountAllSubviews];
-      } else {
-        // View is partially visible, so update clipped subviews
-        [view react_updateClippedSubviewsWithClipRect:clipRect relativeToView:clipView];
-      }
-
-    } else if (view.superview) {
-
-      // View is completely outside the clipRect, so unmount it
-      [view removeFromSuperview];
-    }
-  }
-}
+@synthesize removeClippedSubviews = _removeClippedSubviews;
 
 - (void)setRemoveClippedSubviews:(BOOL)removeClippedSubviews
 {
-  if (!removeClippedSubviews && _removeClippedSubviews) {
-    [self react_remountAllSubviews];
+  if (removeClippedSubviews != _removeClippedSubviews) {
+    _removeClippedSubviews = removeClippedSubviews;
+    for (UIView *view in self.sortedReactSubviews) {
+      if ([view conformsToProtocol:@protocol(RCTClippableView)]) {
+        UIView<RCTClippableView> *clippableView = (UIView<RCTClippableView> *)view;
+        if (removeClippedSubviews) {
+          [clippableView setReactClippingSuperview:self];
+          [self reclipView:clippableView];
+        } else {
+          [clippableView setReactClippingSuperview:nil];
+          [self addSubview:clippableView];
+        }
+      }
+    }
   }
-  _removeClippedSubviews = removeClippedSubviews;
 }
 
-- (void)didUpdateReactSubviews
+- (CGRect)clippingRectForClippingView:(UIView<RCTClippingView> *)clippingView
 {
-  if (_removeClippedSubviews) {
-    [self updateClippedSubviews];
-  } else {
-    [super didUpdateReactSubviews];
-  }
+  return clippingView.bounds;
 }
 
-- (void)updateClippedSubviews
+- (void)reclipView:(UIView<RCTClippableView> *)clippableView
 {
-  // Find a suitable view to use for clipping
-  UIView *clipView = [self react_findClipView];
-  if (clipView) {
-    [self react_updateClippedSubviewsWithClipRect:clipView.bounds relativeToView:clipView];
+  RCTAssert(self.removeClippedSubviews, @"We are trying to evalute clipping while it's turned off. (%@ clips %@?)", self, clippableView);
+
+  CGRect clippingRect = self.bounds;
+  // If the superview is clipping as well it may want to override our clipping rect.
+  if (_reactClippingSuperview) {
+    clippingRect = [_reactClippingSuperview clippingRectForClippingView:self];
+  }
+
+  if (!clippableView.superview && CGRectIntersectsRect(clippableView.frame, clippingRect)) {
+
+    // When adding a clipped view back, we have to make sure zIndex oredering is preserved.
+    // That means we have to find the first subview below the subview being added back.
+    // This is not the most effiecient way of doing it when all subviews are being reclipped one by one.
+    UIView *lastSubview = nil;
+    for (UIView *view in self.sortedReactSubviews) {
+      if (view.superview) {
+        lastSubview = view;
+      } else if (view == clippableView) {
+        break;
+      }
+    }
+    if (lastSubview) {
+      [self insertSubview:clippableView aboveSubview:lastSubview];
+    } else {
+      [self insertSubview:clippableView atIndex:0];
+    }
+  } else if (clippableView.superview && !CGRectIntersectsRect(clippableView.frame, clippingRect)) {
+    [clippableView removeFromSuperview];
   }
 }
 
-- (void)layoutSubviews
-{
-  // TODO (#5906496): this a nasty performance drain, but necessary
-  // to prevent gaps appearing when the loading spinner disappears.
-  // We might be able to fix this another way by triggering a call
-  // to updateClippedSubviews manually after loading
+#pragma mark - RCTClippableView
 
-  [super layoutSubviews];
-
-  if (_removeClippedSubviews) {
-    [self updateClippedSubviews];
-  }
-}
+@synthesize reactClippingSuperview = _reactClippingSuperview;
 
 #pragma mark - Borders
 
@@ -449,7 +368,16 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:unused)
   // TODO: detect up-front if re-rendering is necessary
   CGSize oldSize = self.bounds.size;
   [super reactSetFrame:frame];
+  [_reactClippingSuperview reclipView:self];
   if (!CGSizeEqualToSize(self.bounds.size, oldSize)) {
+    if (_removeClippedSubviews) {
+      for (UIView *view in self.sortedReactSubviews) {
+        if ([view conformsToProtocol:@protocol(RCTClippableView)]) {
+          UIView<RCTClippableView> *clippableView = (UIView<RCTClippableView> *)view;
+          [self reclipView:clippableView];
+        }
+      }
+    }
     [self.layer setNeedsDisplay];
   }
 }

@@ -136,7 +136,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
  * default UIKit behaviors such as textFields automatically scrolling
  * scroll views that contain them and support sticky headers.
  */
-@interface RCTCustomScrollView : UIScrollView<UIGestureRecognizerDelegate>
+@interface RCTCustomScrollView : UIScrollView<UIGestureRecognizerDelegate, RCTClippingView>
 
 @property (nonatomic, copy) NSIndexSet *stickyHeaderIndices;
 @property (nonatomic, assign) BOOL centerContent;
@@ -147,6 +147,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
 
 @implementation RCTCustomScrollView
 {
+  BOOL _removeClippedSubviews;
   __weak UIView *_dockedHeaderView;
 }
 
@@ -367,6 +368,49 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
   [self addSubview:_rctRefreshControl];
 }
 
+#pragma mark - RCTClippingView
+
+- (void)reclipView:(UIView<RCTClippableView> *)clippableView
+{
+  // noop, our child is the content view, which is never clipped
+}
+
+- (CGRect)clippingRectForClippingView:(UIView<RCTClippingView> *)clippingView
+{
+  RCTAssert(clippingView == [self contentView], @"Unexpected clipping view. Expected %@ got %@.", [self contentView], clippingView);
+  // Scrollview's content view is as big as all rows together. If we used its bound for clipping it wouldn't achieve anything.
+  // So we use our (scrollview's) bounds.
+  return [self convertRect:self.bounds toView:clippingView];
+}
+
+- (void)setRemoveClippedSubviews:(BOOL)removeClippedSubviews
+{
+  if (removeClippedSubviews != _removeClippedSubviews) {
+    _removeClippedSubviews = removeClippedSubviews;
+    // No matter if clipping has been turned on or off the child views will do the right thing.
+    if ([self contentView]) {
+      [(UIView<RCTClippableView> *)[self contentView] setReactClippingSuperview:self];
+    }
+  }
+}
+
+- (BOOL)removeClippedSubviews
+{
+  return _removeClippedSubviews;
+}
+
+- (void)reactSetFrame:(CGRect)frame
+{
+  if (!CGRectEqualToRect(frame, self.frame)) {
+    [super setFrame:frame];
+    for (UIView *view in [[self contentView] reactSubviews]) {
+      if ([view conformsToProtocol:@protocol(RCTClippableView)]) {
+        [((UIView<RCTClippingView> *)[self contentView]) reclipView:(UIView<RCTClippableView> *)view];
+      }
+    }
+  }
+}
+
 @end
 
 @implementation RCTScrollView
@@ -411,11 +455,6 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
 RCT_NOT_IMPLEMENTED(- (instancetype)initWithFrame:(CGRect)frame)
 RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
 
-- (void)setRemoveClippedSubviews:(__unused BOOL)removeClippedSubviews
-{
-  // Does nothing
-}
-
 - (void)insertReactSubview:(UIView *)view atIndex:(NSInteger)atIndex
 {
   [super insertReactSubview:view atIndex:atIndex];
@@ -425,6 +464,9 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
     RCTAssert(_contentView == nil, @"RCTScrollView may only contain a single subview");
     _contentView = view;
     [_scrollView addSubview:view];
+    if ([_contentView conformsToProtocol:@protocol(RCTClippableView)]) {
+      [(UIView<RCTClippableView> *)_contentView setReactClippingSuperview:_scrollView];
+    }
   }
 }
 
@@ -472,6 +514,14 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
   _scrollView.clipsToBounds = clipsToBounds;
 }
 
+- (void)setRemoveClippedSubviews:(BOOL)removeClippedSubviews
+{
+  if (removeClippedSubviews != [super removeClippedSubviews]) {
+    [_scrollView setRemoveClippedSubviews:removeClippedSubviews];
+  }
+  [super setRemoveClippedSubviews:removeClippedSubviews];
+}
+
 - (void)dealloc
 {
   _scrollView.delegate = nil;
@@ -484,7 +534,17 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
   RCTAssert([self.subviews lastObject] == _scrollView, @"our only subview should be a scrollview");
 
   CGPoint originalOffset = _scrollView.contentOffset;
-  _scrollView.frame = self.bounds;
+  if (!CGRectEqualToRect(_scrollView.frame, self.bounds)) {
+    _scrollView.frame = self.bounds;
+
+    for (UIView *view in [_contentView reactSubviews]) {
+      if ([view conformsToProtocol:@protocol(RCTClippableView)]) {
+        UIView<RCTClippableView> *clippableView = (UIView<RCTClippableView> *)view;
+        [clippableView.reactClippingSuperview reclipView:clippableView];
+      }
+    }
+
+  }
   _scrollView.contentOffset = originalOffset;
 
   // Adjust the refresh control frame if the scrollview layout changes.
@@ -492,18 +552,10 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
   if (refreshControl && refreshControl.refreshing) {
     refreshControl.frame = (CGRect){_scrollView.contentOffset, {_scrollView.frame.size.width, refreshControl.frame.size.height}};
   }
-
-  [self updateClippedSubviews];
 }
 
 - (void)updateClippedSubviews
 {
-  // Find a suitable view to use for clipping
-  UIView *clipView = [self react_findClipView];
-  if (!clipView) {
-    return;
-  }
-
   static const CGFloat leeway = 1.0;
 
   const CGSize contentSize = _scrollView.contentSize;
@@ -518,8 +570,12 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
     (scrollsVertically && (bounds.size.height < leeway || fabs(_lastClippedToRect.origin.y - bounds.origin.y) >= leeway));
 
   if (shouldClipAgain) {
-    const CGRect clipRect = CGRectInset(clipView.bounds, -leeway, -leeway);
-    [self react_updateClippedSubviewsWithClipRect:clipRect relativeToView:clipView];
+    for (UIView *view in [_contentView reactSubviews]) {
+      if ([view conformsToProtocol:@protocol(RCTClippableView)]) {
+        UIView<RCTClippableView> *clippableView = (UIView<RCTClippableView> *)view;
+        [clippableView.reactClippingSuperview reclipView:clippableView];
+      }
+    }
     _lastClippedToRect = bounds;
   }
 }
