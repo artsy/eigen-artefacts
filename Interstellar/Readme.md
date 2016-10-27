@@ -1,8 +1,8 @@
 ![Interstellar](https://raw.githubusercontent.com/JensRavens/Interstellar/assets/header.jpg)
 
 [![Build Status](https://travis-ci.org/JensRavens/Interstellar.svg)](https://travis-ci.org/JensRavens/Interstellar)
-[![Cocoa Pods Version](https://img.shields.io/cocoapods/v/Interstellar.svg)](https://cocoapods.org/pods/Interstellar)
-[![Cocoa Pods Plattforms](https://img.shields.io/cocoapods/p/Interstellar.svg)](https://cocoapods.org/pods/Interstellar)
+[![CocoaPods Version](https://img.shields.io/cocoapods/v/Interstellar.svg)](https://cocoapods.org/pods/Interstellar)
+[![CocoaPods Plattforms](https://img.shields.io/cocoapods/p/Interstellar.svg)](https://cocoapods.org/pods/Interstellar)
 
 The simplest `Signal<T>` implementation for Functional Reactive Programming you will ever find.
 
@@ -15,7 +15,7 @@ The simplest `Signal<T>` implementation for Functional Reactive Programming you 
 - [x] Lightweight, simple, cross plattform FRP
 - [x] Multithreading with GCD becomes a breeze
 - [x] Most of your methods will conform to the needed syntax anyway.
-- [x] Swift 2 compability
+- [x] Swift 2 compatibility
 - [x] Multithreading with GCD becomes a breeze via WarpDrive
 - [x] Supports Linux and `swift build`
 
