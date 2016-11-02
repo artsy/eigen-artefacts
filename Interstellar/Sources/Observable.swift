@@ -8,52 +8,86 @@
 
 import Foundation
 
-public struct ObservingOptions: OptionSetType {
+public struct ObservingOptions: OptionSet {
     public let rawValue: Int
     public init(rawValue: Int) { self.rawValue = rawValue }
     
+    /// The last value of this Observable will not retained, therefore `observable.value` will always be nil.
+    /// - Note: Observables without retained values can not be merged.
     public static let NoInitialValue = ObservingOptions(rawValue: 1)
+    /// Observables will only fire once for an update and nil out their completion blocks afterwards. 
+    /// Use this to automatically resolve retain cycles for one-off operations.
     public static let Once = ObservingOptions(rawValue: 2)
 }
 
+/**
+ An Observable<T> is value that will change over time.
+ 
+ ```
+ let text = Observable("World")
+ 
+ text.subscribe { string in
+    print("Hello \(string)") // prints Hello World
+ }
+ 
+ text.update("Developer") // will invoke the block and print Hello Developer
+ ```
+ 
+ Observables are thread safe.
+ */
 public final class Observable<T> {
-    private typealias Observer = T->Void
-    private typealias ObserverTokenType = ObserverToken<T>
-    private var observers = [ObserverTokenType: Observer]()
-    private var lastValue: T?
+    fileprivate typealias Observer = (T)->Void
+    fileprivate var observers = Dictionary<ObserverToken<T>, Observer>() // Normal syntax doesn't work: [ObserverToken<T>: Observer]()
+    public private(set) var value: T?
     public let options: ObservingOptions
-    private let mutex = Mutex()
+    fileprivate let mutex = Mutex()
     
+    /// Create a new observable without a value and the desired options. You can supply a value later via `update`.
     public init(options: ObservingOptions = []) {
         self.options = options
     }
     
+    /** 
+    Create a new observable from a value, the type will be automatically inferred:
+    
+     let magicNumber = Observable(42)
+    
+    - Note: See observing options for various upgrades and awesome additions.
+    */
     public init(_ value: T, options: ObservingOptions = []) {
         self.options = options
         if !options.contains(.NoInitialValue){
-            lastValue = value
+            self.value = value
         }
     }
     
-    public func subscribe(observer: T -> Void) -> ObserverToken<T> {
+    /**
+    Subscribe to the future values of this observable with a block. You can use the obtained 
+    `ObserverToken` to manually unsubscribe from future updates via `unsubscribe`.
+     
+    - Note: This block will be retained by the observable until it is deallocated or the corresponding `unsubscribe`
+     function is called.
+    */
+    @discardableResult public func subscribe(_ observer: @escaping (T) -> Void) -> ObserverToken<T> {
         var token: ObserverToken<T>!
         mutex.lock {
-            let newHashValue = nextTokenHash()
+            let newHashValue = (observers.keys.map({$0.hashValue}).max() ?? -1) + 1
             token = ObserverToken(hashValue: newHashValue, observable: self)
-            if !(options.contains(.Once) && lastValue != nil) {
+            if !(options.contains(.Once) && value != nil) {
                 observers[token] = observer
             }
-            if let value = lastValue where !options.contains(.NoInitialValue) {
+            if let value = value , !options.contains(.NoInitialValue) {
                 observer(value)
             }
         }
         return token
     }
     
-    public func update(value: T) {
+    /// Update the inner state of an observable and notify all observers about the new value.
+    public func update(_ value: T) {
         mutex.lock {
             if !options.contains(.NoInitialValue) {
-                lastValue = value
+                self.value = value
             }
             for observe in observers.values {
                 observe(value)
@@ -63,49 +97,57 @@ public final class Observable<T> {
             }
         }
     }
-    
-    public func peek() -> T? {
-        return lastValue
-    }
-    
-    private func nextTokenHash() -> Int {
-        return (observers.keys.map({$0.hashValue}).maxElement() ?? -1) + 1
-    }
 
-    private func unsubscribe(token: ObserverToken<T>) {
+    /// Unsubscribe from future updates with the token obtained from `subscribe`. This will also release the observer block.
+    public func unsubscribe(_ token: ObserverToken<T>) {
         mutex.lock {
             observers[token] = nil
         }
     }
-}
-
-public final class ObserverToken<T>: Hashable {
-    public let hashValue: Int
-    private weak var observable: Observable<T>?
-
-    // Private to avoid instantiation outside this file.
-    private init (hashValue: Int, observable: Observable<T>?) {
-        self.hashValue = hashValue
-        self.observable = observable
+    
+    /**
+    Merge multiple observables of the same type:
+    ```
+    let greeting: Observable<[String]> = Observable<[String]>.merge([Observable("Hello"), Observable("World")]) // contains ["Hello", "World"]
+    ```
+    - Precondition: Observables with the option .NoInitialValue do not retain their value and therefore cannot be merged.
+    */
+    public static func merge<U>(_ observables: [Observable<U>], options: ObservingOptions = []) -> Observable<[U]> {
+        let merged = Observable<[U]>(options: options)
+        let copies = observables.map { $0.map { return $0 } } // copy all observables via subscription to not retain the originals
+        for observable in copies {
+            precondition(!observable.options.contains(.NoInitialValue), "Event style observables do not support merging")
+            observable.subscribe { value in
+                let values = copies.flatMap { $0.value }
+                if values.count == copies.count {
+                    merged.update(values)
+                }
+            }
+            
+        }
+        return merged
     }
-
-    public func unsubscribe() {
-        observable?.unsubscribe(self)
-    }
 }
 
-public func ==<T>(lhs: ObserverToken<T>, rhs: ObserverToken<T>) -> Bool {
-    return lhs.hashValue == rhs.hashValue
-}
 
 extension Observable {
-    public func map<U>(transform: T -> U) -> Observable<U> {
+    /**
+    Create a new observable with a transform applied:
+     
+     let text = Observable("Hello World")
+     let uppercaseText = text.map { $0.uppercased() }
+     text.update("yeah!") // uppercaseText will contain "YEAH!"
+    */
+    public func map<U>(_ transform: @escaping (T) -> U) -> Observable<U> {
         let observable = Observable<U>(options: options)
         subscribe { observable.update(transform($0)) }
         return observable
     }
     
-    public func map<U>(transform: T throws -> U) -> Observable<Result<U>> {
+    /**
+    Creates a new observable with a transform applied. The value of the observable will be wrapped in a Result<T> in case the transform throws.
+    */
+    public func map<U>(_ transform: @escaping (T) throws -> U) -> Observable<Result<U>> {
         let observable = Observable<Result<U>>(options: options)
         subscribe { value in
             observable.update(Result(block: { return try transform(value) }))
@@ -113,21 +155,24 @@ extension Observable {
         return observable
     }
     
-    public func flatMap<U>(transform: T->Observable<U>) -> Observable<U> {
+    /**
+    Creates a new observable with a transform applied. The transform can return asynchronously by updating its returned observable.
+    */
+    public func flatMap<U>(_ transform: @escaping (T)->Observable<U>) -> Observable<U> {
         let observable = Observable<U>(options: options)
         subscribe { transform($0).subscribe(observable.update) }
         return observable
     }
 
-    public func merge<U>(merge: Observable<U>) -> Observable<(T,U)> {
+    public func merge<U>(_ merge: Observable<U>) -> Observable<(T,U)> {
         let signal = Observable<(T,U)>()
         self.subscribe { a in
-            if let b = merge.peek() {
+            if let b = merge.value {
                 signal.update((a,b))
             }
         }
         merge.subscribe { b in
-            if let a = self.peek() {
+            if let a = self.value {
                 signal.update((a,b))
             }
         }
