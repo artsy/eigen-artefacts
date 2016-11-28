@@ -1,6 +1,0 @@
-framework module DRKonamiCode {
-  umbrella header "DRKonamiCode-umbrella.h"
-
-  export *
-  module * { export * }
-}

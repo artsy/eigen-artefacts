@@ -1,6 +1,0 @@
-framework module ARASCIISwizzle {
-  umbrella header "ARASCIISwizzle-umbrella.h"
-
-  export *
-  module * { export * }
-}
