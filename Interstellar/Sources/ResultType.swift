@@ -6,29 +6,41 @@
 //  Copyright © 2015 nerdgeschoss GmbH. All rights reserved.
 //
 
+/// Conform to ResultType to use your own result type, e.g. from other libraries with Interstellar.
 public protocol ResultType {
+    /// Describes the contained successful type of this result.
     associatedtype Value
     
-    var error: ErrorType? { get }
+    /// Return an error if the result is unsuccessful, otherwise nil.
+    var error: Error? { get }
+    
+    /// Return the value if the result is successful, otherwise nil.
     var value: Value? { get }
     
+    /// Convert this result into an `Interstellar.Result`. This implementation is optional.
     var result: Result<Value> { get }
 }
 
+extension ResultType {
+    public var result: Result<Value> {
+        return Result(value: value, error: error)
+    }
+}
+
 extension Result {
-    public init(value: T?, error: ErrorType?) {
+    public init(value: T?, error: Error?) {
         if let error = error {
-            self = Error(error)
+            self = .error(error)
         } else {
-            self = Success(value!)
+            self = .success(value!)
         }
     }
     
-    public init(block: Void throws -> T) {
+    public init(block: (Void) throws -> T) {
         do {
-            self = try Success(block())
+            self = try .success(block())
         } catch let e {
-            self = Error(e)
+            self = .error(e)
         }
     }
     

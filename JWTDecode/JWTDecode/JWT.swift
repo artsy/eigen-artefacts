@@ -27,14 +27,17 @@ import Foundation
 */
 public protocol JWT {
     /// token header part contents
-    var header: [String: AnyObject] { get }
+    var header: [String: Any] { get }
     /// token body part values or token claims
-    var body: [String: AnyObject] { get }
+    var body: [String: Any] { get }
     /// token signature part
     var signature: String? { get }
+    /// jwt string value
+    var string: String { get }
+
 
     /// value of `exp` claim if available
-    var expiresAt: NSDate? { get }
+    var expiresAt: Date? { get }
     /// value of `iss` claim if available
     var issuer: String? { get }
     /// value of `sub` claim if available
@@ -42,9 +45,9 @@ public protocol JWT {
     /// value of `aud` claim if available
     var audience: [String]? { get }
     /// value of `iat` claim if available
-    var issuedAt: NSDate? { get }
+    var issuedAt: Date? { get }
     /// value of `nbf` claim if available
-    var notBefore: NSDate? { get }
+    var notBefore: Date? { get }
     /// value of `jti` claim if available
     var identifier: String? { get }
 
@@ -53,14 +56,16 @@ public protocol JWT {
 }
 
 public extension JWT {
+
     /**
-    Returns a specific claim by its name whose value if of type `T`.
+     Return a claim by it's name
 
-    :param: name of the claim to return
+     - parameter name: name of the claim in the JWT
 
-    :returns: the value of the claim as the generic type `T` if available
-    */
-    public func claim<T>(name: String) -> T? {
-        return self.body[name] as? T
+     - returns: a claim of the JWT
+     */
+    public func claim(name: String) -> Claim {
+        let value = self.body[name]
+        return Claim(value: value)
     }
 }

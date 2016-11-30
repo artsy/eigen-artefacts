@@ -7,19 +7,45 @@
 //
 
 public extension Observable where T : ResultType {
-    public func then<U>(transform: T.Value -> Result<U>) -> Observable<Result<U>> {
+    /// Observables containing a Result<T> can be chained to only continue in the success case.
+    public func then<U>(_ transform: @escaping (T.Value) -> Result<U>) -> Observable<Result<U>> {
         return map { $0.result.flatMap(transform) }
     }
     
-    public func then<U>(transform: T.Value -> U) -> Observable<Result<U>> {
+    /// Observables containing a Result<T> can be chained to only continue in the success case.
+    public func then<U>(_ transform: @escaping (T.Value) -> U) -> Observable<Result<U>> {
         return map { $0.result.map(transform) }
     }
     
-    public func then<U>(transform: T.Value throws -> U) -> Observable<Result<U>> {
+    /// Observables containing a Result<T> can be chained to only continue in the success case.
+    public func then<U>(_ transform: @escaping (T.Value) throws -> U) -> Observable<Result<U>> {
         return map { $0.result.flatMap(transform) }
     }
     
-    public func next(block: T.Value -> Void) -> Observable<T> {
+    /// Observables containing a Result<T> can be chained to only continue in the success case.
+    public func then<U>(_ transform: @escaping (T.Value) -> Observable<U>) -> Observable<Result<U>> {
+        return flatMap { [options] in
+            let observable = Observable<Result<U>>(options: options)
+            switch $0.result {
+            case let .success(v): transform(v).subscribe { observable.update(.success($0)) }
+            case let .error(error): observable.update(.error(error))
+            }
+            return observable
+        }
+    }
+    
+    /// Observables containing a Result<T> can be chained to only continue in the success case.
+    public func then<U>(_ transform: @escaping (T.Value) -> Observable<Result<U>>) -> Observable<Result<U>> {
+        return flatMap { [options] in
+            switch $0.result {
+            case let .success(v): return transform(v)
+            case let .error(error): return Observable<Result<U>>(Result.error(error), options: options)
+            }
+        }
+    }
+    
+    /// Only subscribe to successful events.
+    @discardableResult public func next(_ block: @escaping (T.Value) -> Void) -> Observable<T> {
         subscribe { result in
             if let value = result.value {
                 block(value)
@@ -28,7 +54,8 @@ public extension Observable where T : ResultType {
         return self
     }
     
-    public func error(block: ErrorType -> Void) -> Observable<T> {
+    /// Only subscribe to errors.
+    @discardableResult public func error(_ block: @escaping (Error) -> Void) -> Observable<T> {
         subscribe { result in
             if let error = result.error {
                 block(error)
@@ -37,7 +64,8 @@ public extension Observable where T : ResultType {
         return self
     }
     
-    public func peekValue() -> T.Value? {
-        return peek()?.value
+    /// Peek at the value of the observable.
+    public func peek() -> T.Value? {
+        return self.value?.value
     }
 }

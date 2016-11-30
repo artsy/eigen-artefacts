@@ -1,10 +1,12 @@
 # JWTDecode.swift
 
 [![CI Status](http://img.shields.io/travis/auth0/JWTDecode.swift.svg?style=flat-square)](https://travis-ci.org/auth0/JWTDecode.swift)
+[![Coverage Status](https://img.shields.io/codecov/c/github/auth0/JWTDecode.swift/master.svg?style=flat-square)](https://codecov.io/github/auth0/JWTDecode.swift)
 [![Version](https://img.shields.io/cocoapods/v/JWTDecode.svg?style=flat-square)](http://cocoadocs.org/docsets/JWTDecode)
 [![License](https://img.shields.io/cocoapods/l/JWTDecode.svg?style=flat-square)](http://cocoadocs.org/docsets/JWTDecode)
 [![Platform](https://img.shields.io/cocoapods/p/JWTDecode.svg?style=flat-square)](http://cocoadocs.org/docsets/JWTDecode)
 [![Carthage compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat-square)](https://github.com/Carthage/Carthage)
+![Swift 3.0.x](https://img.shields.io/badge/Swift-3.0.x-orange.svg)
 
 This library will help you check [JWT](http://jwt.io/) payload
 
@@ -12,7 +14,7 @@ This library will help you check [JWT](http://jwt.io/) payload
 
 ## Requirements
 
-iOS 8+ and at least Xcode 7 (for Swift 2.0).
+iOS 8+ and Xcode 8 (for Swift 3.0).
 
 ## Installation
 
@@ -22,7 +24,7 @@ JWTDecode is available through [CocoaPods](http://cocoapods.org). To install
 it, simply add the following line to your Podfile:
 
 ```ruby
-pod "JWTDecode", '~> 1.0'
+pod "JWTDecode"
 ```
 
 ###Carthage
@@ -35,7 +37,7 @@ github "auth0/JWTDecode.swift"
 
 ###Manual installation
 
-Download `JWTDecode.framework` from [Releases](/releases) and add it to your project in Xcode.
+Download `JWTDecode.framework` from Releases and add it to your project in Xcode.
 
 
 ##Usage
@@ -49,7 +51,7 @@ import JWTDecode
 and decode the token
 
 ```swift
-let jwt = try decode(token)    
+let jwt = try decode(jwt: token)    
 ```
 
 ### JWT parts
@@ -101,10 +103,23 @@ jwt.expiresAt
 ```
 
 ### Custom Claims
-If we also have our custom claims we can retrive them calling `claim<T>(name: String) -> T?` where `T` is the value type of the claim, e.g.: a `String`
+If we also have our custom claims we can retrive them calling `claim(name: String) -> Claim` then you can try converting the value like
 
 ```swift
-let custom: String? = jwt.claim("email")
+let claim = jwt.claim(name: "email")
+if let email = claim.string {
+    print("Email in jwt was \(email)")
+}
+```
+
+The supported conversions are:
+
+```swift
+var string: String?
+var integer: Int?
+var double: Double?
+var date: NSDate?
+var array: [String]?
 ```
 
 ### Error Handling

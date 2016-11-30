@@ -1,4 +1,6 @@
+#ifdef __OBJC__
 #import <UIKit/UIKit.h>
+#endif
 
 #import "AFOAuth1Client.h"
 #import "AFOAuth1RequestSerializer.h"
