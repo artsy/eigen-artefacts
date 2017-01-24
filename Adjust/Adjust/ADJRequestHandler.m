@@ -14,19 +14,16 @@
 #import "ADJActivityKind.h"
 
 static const char * const kInternalQueueName = "io.adjust.RequestQueue";
-static const double kRequestTimeout = 60; // 60 seconds
-
 
 #pragma mark - private
 @interface ADJRequestHandler()
 
-@property (nonatomic) dispatch_queue_t internalQueue;
-@property (nonatomic, assign) id<ADJPackageHandler> packageHandler;
-@property (nonatomic, assign) id<ADJLogger> logger;
-@property (nonatomic, retain) NSURL *baseUrl;
+@property (nonatomic, strong) dispatch_queue_t internalQueue;
+@property (nonatomic, weak) id<ADJPackageHandler> packageHandler;
+@property (nonatomic, weak) id<ADJLogger> logger;
+@property (nonatomic, strong) NSURL *baseUrl;
 
 @end
-
 
 #pragma mark -
 @implementation ADJRequestHandler
@@ -47,47 +44,47 @@ static const double kRequestTimeout = 60; // 60 seconds
     return self;
 }
 
-- (void)sendPackage:(ADJActivityPackage *)activityPackage {
-    dispatch_async(self.internalQueue, ^{
-        [self sendInternal:activityPackage];
-    });
+- (void)sendPackage:(ADJActivityPackage *)activityPackage
+          queueSize:(NSUInteger)queueSize
+{
+    [ADJUtil launchInQueue:self.internalQueue
+                selfInject:self
+                     block:^(ADJRequestHandler* selfI) {
+                         [selfI sendI:selfI
+                     activityPackage:activityPackage
+                           queueSize:queueSize];
+                     }];
+}
+
+- (void)teardown {
+    [ADJAdjustFactory.logger verbose:@"ADJRequestHandler teardown"];
+
+    self.internalQueue = nil;
+    self.packageHandler = nil;
+    self.logger = nil;
+    self.baseUrl = nil;
 }
 
 #pragma mark - internal
-- (void)sendInternal:(ADJActivityPackage *)package{
+- (void)sendI:(ADJRequestHandler *)selfI
+activityPackage:(ADJActivityPackage *)activityPackage
+   queueSize:(NSUInteger)queueSize
+{
 
-    [ADJUtil sendRequest:[self requestForPackage:package]
-      prefixErrorMessage:package.failureMessage
-      suffixErrorMessage:@"Will retry later"
-     jsonResponseHandler:^(NSDictionary *jsonDict) {
-         if (jsonDict == nil) {
-             [self.packageHandler closeFirstPackage];
-             return;
-         }
+    [ADJUtil sendPostRequest:selfI.baseUrl
+                   queueSize:queueSize
+          prefixErrorMessage:activityPackage.failureMessage
+          suffixErrorMessage:@"Will retry later"
+             activityPackage:activityPackage
+         responseDataHandler:^(ADJResponseData * responseData)
+    {
+        if (responseData.jsonResponse == nil) {
+            [selfI.packageHandler closeFirstPackage:responseData activityPackage:activityPackage];
+            return;
+        }
 
-         [self.packageHandler finishedTracking:jsonDict];
-         [self.packageHandler sendNextPackage];
+        [selfI.packageHandler sendNextPackage:responseData];
      }];
-}
-
-#pragma mark - private
-- (NSMutableURLRequest *)requestForPackage:(ADJActivityPackage *)package {
-    NSURL *url = [NSURL URLWithString:package.path relativeToURL:self.baseUrl];
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
-    request.timeoutInterval = kRequestTimeout;
-    request.HTTPMethod = @"POST";
-
-    [request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
-    [request setValue:package.clientSdk forHTTPHeaderField:@"Client-Sdk"];
-    [request setHTTPBody:[self bodyForParameters:package.parameters]];
-
-    return request;
-}
-
-- (NSData *)bodyForParameters:(NSDictionary *)parameters {
-    NSString *bodyString = [ADJUtil queryString:parameters];
-    NSData *body = [NSData dataWithBytes:bodyString.UTF8String length:bodyString.length];
-    return body;
 }
 
 @end

@@ -14,10 +14,11 @@
 
 - (id)initWithActivityHandler:(id<ADJActivityHandler>) activityHandler
        withAttributionPackage:(ADJActivityPackage *) attributionPackage
-                 startPaused:(BOOL)startPaused
-                  hasDelegate:(BOOL)hasDelegate;
+                startsSending:(BOOL)startsSending;
 
-- (void)checkAttribution:(NSDictionary *)jsonDict;
+- (void)checkSessionResponse:(ADJSessionResponseData *)sessionResponseData;
+
+- (void)checkAttributionResponse:(ADJAttributionResponseData *)attributionResponseData;
 
 - (void)getAttribution;
 
@@ -25,13 +26,14 @@
 
 - (void)resumeSending;
 
+- (void)teardown;
+
 @end
 
 @interface ADJAttributionHandler : NSObject <ADJAttributionHandler>
 
 + (id<ADJAttributionHandler>)handlerWithActivityHandler:(id<ADJActivityHandler>)activityHandler
                                  withAttributionPackage:(ADJActivityPackage *) attributionPackage
-                                            startPaused:(BOOL)startPaused
-                                            hasDelegate:(BOOL)hasDelegate;
+                                          startsSending:(BOOL)startsSending;
 
 @end

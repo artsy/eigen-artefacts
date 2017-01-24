@@ -99,7 +99,7 @@
 }
 
 - (NSString *)adjFbAttributionId {
-#if ADJUST_NO_UIPASTEBOARD || defined (TARGET_OS_TV)
+#if ADJUST_NO_UIPASTEBOARD || TARGET_OS_TV
     return @"";
 #else
     NSString *result = [UIPasteboard pasteboardWithName:@"fb_app_attribution" create:NO].string;
@@ -139,7 +139,7 @@
     return @"";
 }
 
-- (void) adjSetIad:(ADJActivityHandler *) activityHandler
+- (void)adjSetIad:(ADJActivityHandler *)activityHandler
        triesV3Left:(int)triesV3Left
 {
     id<ADJLogger> logger = [ADJAdjustFactory logger];
@@ -170,6 +170,7 @@
 
     // if no tries for iad v3 left -> iad v2
     if (triesV3Left == 0) {
+        [logger warn:@"Reached limit number of retry for iAd v3. Trying iAd v2"];
         [self adjSetIadWithDates:activityHandler ADClientSharedClientInstance:ADClientSharedClientInstance];
         return;
     }
@@ -178,8 +179,9 @@
                      ADClientSharedClientInstance:ADClientSharedClientInstance
                                       retriesLeft:(triesV3Left - 1)];
 
-    // if no tries for iad v3 left -> iad v2
+    // if iad v3 not available -> iad v2
     if (!isIadV3Avaliable) {
+        [logger warn:@"iAd v3 not available. Trying iAd v2"];
         [self adjSetIadWithDates:activityHandler ADClientSharedClientInstance:ADClientSharedClientInstance];
     }
 #pragma clang diagnostic pop
@@ -200,7 +202,7 @@ ADClientSharedClientInstance:(id)ADClientSharedClientInstance
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
     [ADClientSharedClientInstance performSelector:iadDetailsSelector
                                        withObject:^(NSDictionary *attributionDetails, NSError *error) {
-                                           [activityHandler setIadDetails:attributionDetails error:error retriesLeft:retriesLeft];
+                                           [activityHandler setAttributionDetails:attributionDetails error:error retriesLeft:retriesLeft];
                                        }];
 #pragma clang diagnostic pop
 

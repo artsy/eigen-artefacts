@@ -10,25 +10,28 @@
 #import "ADJActivityPackage.h"
 #import "ADJPackageHandler.h"
 #import "ADJActivityHandler.h"
+#import "ADJResponseData.h"
+#import "ADJSessionParameters.h"
 
 @protocol ADJPackageHandler
 
 - (id)initWithActivityHandler:(id<ADJActivityHandler>)activityHandler
-                  startPaused:(BOOL)startPaused;
+                startsSending:(BOOL)startsSending;
 
 - (void)addPackage:(ADJActivityPackage *)package;
 - (void)sendFirstPackage;
-- (void)sendNextPackage;
-- (void)closeFirstPackage;
+- (void)sendNextPackage:(ADJResponseData *)responseData;
+- (void)closeFirstPackage:(ADJResponseData *)responseData
+          activityPackage:(ADJActivityPackage *)activityPackage;
 - (void)pauseSending;
 - (void)resumeSending;
-- (void)finishedTracking:(NSDictionary *)jsonDict;
-
+- (void)updatePackages:(ADJSessionParameters *)sessionParameters;
+- (void)teardown:(BOOL)deleteState;
 @end
 
 @interface ADJPackageHandler : NSObject <ADJPackageHandler>
 
 + (id<ADJPackageHandler>)handlerWithActivityHandler:(id<ADJActivityHandler>)activityHandler
-                                        startPaused:(BOOL)startPaused;
+                                      startsSending:(BOOL)startsSending;
 
 @end

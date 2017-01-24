@@ -6,89 +6,134 @@
 //  Copyright (c) 2013 adjust GmbH. All rights reserved.
 //
 
+#import "ADJKeychain.h"
 #import "ADJActivityState.h"
 #import "UIDevice+ADJAdditions.h"
 
 static const int kTransactionIdCount = 10;
 
-#pragma mark public implementation
 @implementation ADJActivityState
+
+#pragma mark - Object lifecycle methods
 
 - (id)init {
     self = [super init];
-    if (self == nil) return nil;
 
-    // create UUID for new devices
-    self.uuid = [UIDevice.currentDevice adjCreateUuid];
+    if (self == nil) {
+        return nil;
+    }
 
-    self.eventCount      = 0;
-    self.sessionCount    = 0;
-    self.subsessionCount = -1; // -1 means unknown
-    self.sessionLength   = -1;
-    self.timeSpent       = -1;
-    self.lastActivity    = -1;
-    self.lastInterval    = -1;
-    self.transactionIds  = [NSMutableArray arrayWithCapacity:kTransactionIdCount];
-    self.enabled         = YES;
-    self.askingAttribution           = NO;
+    [self assignUuid:[UIDevice.currentDevice adjCreateUuid]];
+
+    self.eventCount         = 0;
+    self.sessionCount       = 0;
+    self.subsessionCount    = -1;   // -1 means unknown
+    self.sessionLength      = -1;
+    self.timeSpent          = -1;
+    self.lastActivity       = -1;
+    self.lastInterval       = -1;
+    self.enabled            = YES;
+    self.askingAttribution  = NO;
+    self.deviceToken        = nil;
+    self.transactionIds     = [NSMutableArray arrayWithCapacity:kTransactionIdCount];
+    self.updatePackages  = NO;
 
     return self;
 }
+
+#pragma mark - Public methods
 
 - (void)resetSessionAttributes:(double)now {
     self.subsessionCount = 1;
     self.sessionLength   = 0;
     self.timeSpent       = 0;
-    self.lastActivity    = now;
     self.lastInterval    = -1;
+    self.lastActivity    = now;
 }
 
 - (void)addTransactionId:(NSString *)transactionId {
-    if (self.transactionIds == nil) { // create array
+    // Create array.
+    if (self.transactionIds == nil) {
         self.transactionIds = [NSMutableArray arrayWithCapacity:kTransactionIdCount];
     }
 
+    // Make space.
     if (self.transactionIds.count == kTransactionIdCount) {
-        [self.transactionIds removeObjectAtIndex:0]; // make space
+        [self.transactionIds removeObjectAtIndex:0];
     }
 
-    [self.transactionIds addObject:transactionId]; // add new ID
+    // Add the new ID.
+    [self.transactionIds addObject:transactionId];
 }
 
 - (BOOL)findTransactionId:(NSString *)transactionId {
     return [self.transactionIds containsObject:transactionId];
 }
 
-- (NSString *)description {
-    return [NSString stringWithFormat:@"ec:%d sc:%d ssc:%d ask:%d sl:%.1f ts:%.1f la:%.1f",
-            self.eventCount, self.sessionCount, self.subsessionCount, self.askingAttribution, self.sessionLength,
-            self.timeSpent, self.lastActivity];
+#pragma mark - Private & helper methods
+
+- (void)assignUuid:(NSString *)uuid {
+    // First check if there's any UUID written in keychain.
+    // If yes, use keychain value and flag it.
+    // If not, use given UUID and store it to keychain.
+    //      If successfully written, flag it.
+    //      If writing failed, don't flat it.
+
+    NSString *persistedUuid = [ADJKeychain valueForKeychainKey:@"adjust_persisted_uuid" service:@"deviceInfo"];
+
+    // Check if value existed in keychain.
+    if (persistedUuid != nil) {
+        // Check if value has UUID format.
+        if ((bool)[[NSUUID alloc] initWithUUIDString:persistedUuid]) {
+            // Value written in keychain seems to have UUID format.
+            self.uuid = persistedUuid;
+            self.isPersisted = YES;
+
+            return;
+        }
+    }
+
+    // At this point, UUID was not persisted or if persisted, didn't have proper UUID format.
+
+    // Since we don't have anything in the keychain, we'll use the passed UUID value.
+    // Try to save that value to the keychain and flag if successfully written.
+    self.uuid = uuid;
+    self.isPersisted = [ADJKeychain setValue:self.uuid forKeychainKey:@"adjust_persisted_uuid" inService:@"deviceInfo"];
 }
 
-#pragma mark NSCoding
+- (NSString *)description {
+    return [NSString stringWithFormat:@"ec:%d sc:%d ssc:%d ask:%d sl:%.1f ts:%.1f la:%.1f dt:%@",
+            self.eventCount, self.sessionCount, self.subsessionCount, self.askingAttribution, self.sessionLength,
+            self.timeSpent, self.lastActivity, self.deviceToken];
+}
+
+#pragma mark - NSCoding protocol methods
 
 - (id)initWithCoder:(NSCoder *)decoder {
     self = [super init];
-    if (self == nil) return nil;
 
-    self.eventCount        = [decoder decodeIntForKey:@"eventCount"];
-    self.sessionCount      = [decoder decodeIntForKey:@"sessionCount"];
-    self.subsessionCount   = [decoder decodeIntForKey:@"subsessionCount"];
-    self.sessionLength     = [decoder decodeDoubleForKey:@"sessionLength"];
-    self.timeSpent         = [decoder decodeDoubleForKey:@"timeSpent"];
-    self.lastActivity      = [decoder decodeDoubleForKey:@"lastActivity"];
+    if (self == nil) {
+        return nil;
+    }
 
-    // default values for migrating devices
+    self.eventCount         = [decoder decodeIntForKey:@"eventCount"];
+    self.sessionCount       = [decoder decodeIntForKey:@"sessionCount"];
+    self.subsessionCount    = [decoder decodeIntForKey:@"subsessionCount"];
+    self.sessionLength      = [decoder decodeDoubleForKey:@"sessionLength"];
+    self.timeSpent          = [decoder decodeDoubleForKey:@"timeSpent"];
+    self.lastActivity       = [decoder decodeDoubleForKey:@"lastActivity"];
+
+    // Default values for migrating devices
     if ([decoder containsValueForKey:@"uuid"]) {
-        self.uuid              = [decoder decodeObjectForKey:@"uuid"];
+        [self assignUuid:[decoder decodeObjectForKey:@"uuid"]];
     }
 
     if (self.uuid == nil) {
-        self.uuid = [UIDevice.currentDevice adjCreateUuid];
+        [self assignUuid:[UIDevice.currentDevice adjCreateUuid]];
     }
 
     if ([decoder containsValueForKey:@"transactionIds"]) {
-        self.transactionIds    = [decoder decodeObjectForKey:@"transactionIds"];
+        self.transactionIds = [decoder decodeObjectForKey:@"transactionIds"];
     }
 
     if (self.transactionIds == nil) {
@@ -96,7 +141,7 @@ static const int kTransactionIdCount = 10;
     }
 
     if ([decoder containsValueForKey:@"enabled"]) {
-        self.enabled           = [decoder decodeBoolForKey:@"enabled"];
+        self.enabled = [decoder decodeBoolForKey:@"enabled"];
     } else {
         self.enabled = YES;
     }
@@ -105,6 +150,24 @@ static const int kTransactionIdCount = 10;
         self.askingAttribution = [decoder decodeBoolForKey:@"askingAttribution"];
     } else {
         self.askingAttribution = NO;
+    }
+
+    if ([decoder containsValueForKey:@"deviceToken"]) {
+        self.deviceToken        = [decoder decodeObjectForKey:@"deviceToken"];
+    }
+
+    if ([decoder containsValueForKey:@"updatePackages"]) {
+        self.updatePackages     = [decoder decodeBoolForKey:@"updatePackages"];
+    } else {
+        self.updatePackages     = NO;
+    }
+
+    if ([decoder containsValueForKey:@"adid"]) {
+        self.adid               = [decoder decodeObjectForKey:@"adid"];
+    }
+
+    if ([decoder containsValueForKey:@"attributionDetails"]) {
+        self.attributionDetails = [decoder decodeObjectForKey:@"attributionDetails"];
     }
 
     self.lastInterval = -1;
@@ -123,23 +186,29 @@ static const int kTransactionIdCount = 10;
     [encoder encodeObject:self.transactionIds  forKey:@"transactionIds"];
     [encoder encodeBool:self.enabled           forKey:@"enabled"];
     [encoder encodeBool:self.askingAttribution forKey:@"askingAttribution"];
+    [encoder encodeObject:self.deviceToken     forKey:@"deviceToken"];
+    [encoder encodeBool:self.updatePackages    forKey:@"updatePackages"];
+    [encoder encodeObject:self.adid            forKey:@"adid"];
+    [encoder encodeObject:self.attributionDetails forKey:@"attributionDetails"];
 }
 
--(id)copyWithZone:(NSZone *)zone
-{
-    ADJActivityState* copy = [[[self class] allocWithZone:zone] init];
+- (id)copyWithZone:(NSZone *)zone {
+    ADJActivityState *copy = [[[self class] allocWithZone:zone] init];
+
+    // copy only values used by package builder
     if (copy) {
-        copy.sessionCount      = self.sessionCount;
-        copy.subsessionCount   = self.subsessionCount;
-        copy.sessionLength     = self.sessionLength;
-        copy.timeSpent         = self.timeSpent;
-        copy.uuid              = [self.uuid copyWithZone:zone];
-        copy.lastInterval      = self.lastInterval;
-        copy.eventCount        = self.eventCount;
-        copy.enabled           = self.enabled;
-        copy.lastActivity      = self.lastActivity;
-        copy.askingAttribution = self.askingAttribution;
-        // transactionIds not copied
+        copy.sessionCount       = self.sessionCount;
+        copy.subsessionCount    = self.subsessionCount;
+        copy.sessionLength      = self.sessionLength;
+        copy.timeSpent          = self.timeSpent;
+        copy.uuid               = [self.uuid copyWithZone:zone];
+        copy.lastInterval       = self.lastInterval;
+        copy.eventCount         = self.eventCount;
+        copy.enabled            = self.enabled;
+        copy.lastActivity       = self.lastActivity;
+        copy.askingAttribution  = self.askingAttribution;
+        copy.deviceToken        = [self.deviceToken copyWithZone:zone];
+        copy.updatePackages     = self.updatePackages;
     }
     
     return copy;

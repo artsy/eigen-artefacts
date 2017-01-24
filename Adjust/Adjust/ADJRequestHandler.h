@@ -7,14 +7,16 @@
 //
 #import <Foundation/Foundation.h>
 
-#import "ADJRequestHandler.h"
 #import "ADJPackageHandler.h"
 
 @protocol ADJRequestHandler
 
 - (id)initWithPackageHandler:(id<ADJPackageHandler>) packageHandler;
 
-- (void)sendPackage:(ADJActivityPackage *)activityPackage;
+- (void)sendPackage:(ADJActivityPackage *)activityPackage
+          queueSize:(NSUInteger)queueSize;
+
+- (void)teardown;
 
 @end
 

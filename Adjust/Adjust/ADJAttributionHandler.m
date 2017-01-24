@@ -14,16 +14,16 @@
 #import "ADJTimerOnce.h"
 
 static const char * const kInternalQueueName     = "com.adjust.AttributionQueue";
+static NSString   * const kAttributionTimerName   = @"Attribution timer";
 
 @interface ADJAttributionHandler()
 
-@property (nonatomic) dispatch_queue_t internalQueue;
-@property (nonatomic, assign) id<ADJActivityHandler> activityHandler;
-@property (nonatomic, assign) id<ADJLogger> logger;
-@property (nonatomic, retain) ADJTimerOnce *timer;
-@property (nonatomic, retain) ADJActivityPackage * attributionPackage;
+@property (nonatomic, strong) dispatch_queue_t internalQueue;
+@property (nonatomic, weak) id<ADJActivityHandler> activityHandler;
+@property (nonatomic, weak) id<ADJLogger> logger;
+@property (nonatomic, strong) ADJTimerOnce *attributionTimer;
+@property (nonatomic, strong) ADJActivityPackage * attributionPackage;
 @property (nonatomic, assign) BOOL paused;
-@property (nonatomic, assign) BOOL hasDelegate;
 
 @end
 
@@ -33,19 +33,16 @@ static const double kRequestTimeout = 60; // 60 seconds
 
 + (id<ADJAttributionHandler>)handlerWithActivityHandler:(id<ADJActivityHandler>)activityHandler
                                  withAttributionPackage:(ADJActivityPackage *) attributionPackage
-                                            startPaused:(BOOL)startPaused
-                                            hasDelegate:(BOOL)hasDelegate;
+                                          startsSending:(BOOL)startsSending;
 {
     return [[ADJAttributionHandler alloc] initWithActivityHandler:activityHandler
                                            withAttributionPackage:attributionPackage
-                                                      startPaused:startPaused
-                                                      hasDelegate:hasDelegate];
+                                                    startsSending:startsSending];
 }
 
 - (id)initWithActivityHandler:(id<ADJActivityHandler>) activityHandler
        withAttributionPackage:(ADJActivityPackage *) attributionPackage
-                  startPaused:(BOOL)startPaused
-                  hasDelegate:(BOOL)hasDelegate;
+                startsSending:(BOOL)startsSending;
 {
     self = [super init];
     if (self == nil) return nil;
@@ -54,105 +51,183 @@ static const double kRequestTimeout = 60; // 60 seconds
     self.activityHandler = activityHandler;
     self.logger = ADJAdjustFactory.logger;
     self.attributionPackage = attributionPackage;
-    self.paused = startPaused;
-    self.hasDelegate = hasDelegate;
-    self.timer = [ADJTimerOnce timerWithBlock:^{ [self getAttributionInternal]; }
-                                         queue:self.internalQueue];
+    self.paused = !startsSending;
+    __weak __typeof__(self) weakSelf = self;
+    self.attributionTimer = [ADJTimerOnce timerWithBlock:^{
+        __typeof__(self) strongSelf = weakSelf;
+        if (strongSelf == nil) return;
+
+        [strongSelf requestAttributionI:strongSelf];
+    }
+                                                   queue:self.internalQueue
+                                                    name:kAttributionTimerName];
 
     return self;
 }
 
-- (void) checkAttribution:(NSDictionary *)jsonDict {
-    dispatch_async(self.internalQueue, ^{
-        [self checkAttributionInternal:jsonDict];
-    });
+- (void)checkSessionResponse:(ADJSessionResponseData *)sessionResponseData {
+    [ADJUtil launchInQueue:self.internalQueue
+                selfInject:self
+                     block:^(ADJAttributionHandler* selfI) {
+                         [selfI checkSessionResponseI:selfI
+                                  sessionResponseData:sessionResponseData];
+                     }];
 }
 
-- (void) getAttributionWithDelay:(int)milliSecondsDelay {
+- (void)checkAttributionResponse:(ADJAttributionResponseData *)attributionResponseData {
+    [ADJUtil launchInQueue:self.internalQueue
+                selfInject:self
+                     block:^(ADJAttributionHandler* selfI) {
+                         [selfI checkAttributionResponseI:selfI
+                                  attributionResponseData:attributionResponseData];
+
+                     }];
+}
+
+- (void)getAttribution {
+    [ADJUtil launchInQueue:self.internalQueue
+                selfInject:self
+                     block:^(ADJAttributionHandler* selfI) {
+                         [selfI waitRequestAttributionWithDelayI:selfI
+                                               milliSecondsDelay:0];
+
+                     }];
+}
+
+- (void)pauseSending {
+    self.paused = YES;
+}
+
+- (void)resumeSending {
+    self.paused = NO;
+}
+
+#pragma mark - internal
+- (void)checkSessionResponseI:(ADJAttributionHandler*)selfI
+          sessionResponseData:(ADJSessionResponseData *)sessionResponseData {
+    [selfI checkAttributionI:selfI responseData:sessionResponseData];
+
+    [selfI.activityHandler launchSessionResponseTasks:sessionResponseData];
+}
+
+- (void)checkAttributionResponseI:(ADJAttributionHandler*)selfI
+                  attributionResponseData:(ADJAttributionResponseData *)attributionResponseData {
+    [selfI checkAttributionI:selfI responseData:attributionResponseData];
+
+    [selfI checkDeeplinkI:selfI attributionResponseData:attributionResponseData];
+
+    [selfI.activityHandler launchAttributionResponseTasks:attributionResponseData];
+}
+
+- (void)checkAttributionI:(ADJAttributionHandler*)selfI
+             responseData:(ADJResponseData *)responseData {
+    if (responseData.jsonResponse == nil) {
+        return;
+    }
+
+    NSNumber *timerMilliseconds = [responseData.jsonResponse objectForKey:@"ask_in"];
+
+    if (timerMilliseconds != nil) {
+        [selfI.activityHandler setAskingAttribution:YES];
+
+        [selfI waitRequestAttributionWithDelayI:selfI
+                              milliSecondsDelay:[timerMilliseconds intValue]];
+
+        return;
+    }
+
+    [selfI.activityHandler setAskingAttribution:NO];
+
+    NSDictionary * jsonAttribution = [responseData.jsonResponse objectForKey:@"attribution"];
+    responseData.attribution = [ADJAttribution dataWithJsonDict:jsonAttribution adid:responseData.adid];
+}
+
+- (void)checkDeeplinkI:(ADJAttributionHandler*)selfI
+attributionResponseData:(ADJAttributionResponseData *)attributionResponseData {
+    if (attributionResponseData.jsonResponse == nil) {
+        return;
+    }
+
+    NSDictionary * jsonAttribution = [attributionResponseData.jsonResponse objectForKey:@"attribution"];
+    if (jsonAttribution == nil) {
+        return;
+    }
+
+    NSString *deepLink = [jsonAttribution objectForKey:@"deeplink"];
+    if (deepLink == nil) {
+        return;
+    }
+
+    attributionResponseData.deeplink = [NSURL URLWithString:deepLink];
+}
+
+- (void)requestAttributionI:(ADJAttributionHandler*)selfI {
+    if (selfI.paused) {
+        [selfI.logger debug:@"Attribution handler is paused"];
+        return;
+    }
+    [selfI.logger verbose:@"%@", selfI.attributionPackage.extendedString];
+
+    [ADJUtil sendRequest:[selfI requestI:selfI]
+      prefixErrorMessage:@"Failed to get attribution"
+         activityPackage:selfI.attributionPackage
+     responseDataHandler:^(ADJResponseData * responseData)
+    {
+        if ([responseData isKindOfClass:[ADJAttributionResponseData class]]) {
+            [selfI checkAttributionResponse:(ADJAttributionResponseData*)responseData];
+        }
+    }];
+}
+
+- (void)waitRequestAttributionWithDelayI:(ADJAttributionHandler*)selfI
+                       milliSecondsDelay:(int)milliSecondsDelay
+{
     NSTimeInterval secondsDelay = milliSecondsDelay / 1000;
-    NSTimeInterval nextAskIn = [self.timer fireIn];
+    NSTimeInterval nextAskIn = [selfI.attributionTimer fireIn];
     if (nextAskIn > secondsDelay) {
         return;
     }
 
     if (milliSecondsDelay > 0) {
-        [self.logger debug:@"Waiting to query attribution in %d milliseconds", milliSecondsDelay];
+        [selfI.logger debug:@"Waiting to query attribution in %d milliseconds", milliSecondsDelay];
     }
 
     // set the new time the timer will fire in
-    [self.timer startIn:secondsDelay];
-}
-
-- (void) getAttribution {
-    [self getAttributionWithDelay:0];
-}
-
-- (void) pauseSending {
-    self.paused = YES;
-}
-
-- (void) resumeSending {
-    self.paused = NO;
-}
-
-#pragma mark - internal
--(void) checkAttributionInternal:(NSDictionary *)jsonDict {
-    if ([ADJUtil isNull:jsonDict]) return;
-
-    NSDictionary* jsonAttribution = [jsonDict objectForKey:@"attribution"];
-    ADJAttribution *attribution = [ADJAttribution dataWithJsonDict:jsonAttribution];
-
-    NSNumber *timerMilliseconds = [jsonDict objectForKey:@"ask_in"];
-
-    if (timerMilliseconds == nil) {
-        [self.activityHandler updateAttribution:attribution];
-
-        [self.activityHandler setAskingAttribution:NO];
-
-        return;
-    };
-
-    [self.activityHandler setAskingAttribution:YES];
-
-    [self getAttributionWithDelay:[timerMilliseconds intValue]];
-}
-
--(void) getAttributionInternal {
-    if (!self.hasDelegate) {
-        return;
-    }
-    if (self.paused) {
-        [self.logger debug:@"Attribution handler is paused"];
-        return;
-    }
-    [self.logger verbose:@"%@", self.attributionPackage.extendedString];
-
-    [ADJUtil sendRequest:[self request]
-      prefixErrorMessage:@"Failed to get attribution"
-     jsonResponseHandler:^(NSDictionary *jsonDict) {
-         [self checkAttribution:jsonDict];
-     }];
+    [selfI.attributionTimer startIn:secondsDelay];
 }
 
 #pragma mark - private
 
-- (NSMutableURLRequest *)request {
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[self url]];
+- (NSMutableURLRequest *)requestI:(ADJAttributionHandler*)selfI {
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[selfI urlI:selfI]];
     request.timeoutInterval = kRequestTimeout;
     request.HTTPMethod = @"GET";
 
-    [request setValue:self.attributionPackage.clientSdk forHTTPHeaderField:@"Client-Sdk"];
+    [request setValue:selfI.attributionPackage.clientSdk forHTTPHeaderField:@"Client-Sdk"];
 
     return request;
 }
 
-- (NSURL *)url {
-    NSString *parameters = [ADJUtil queryString:self.attributionPackage.parameters];
-    NSString *relativePath = [NSString stringWithFormat:@"%@?%@", self.attributionPackage.path, parameters];
+- (NSURL *)urlI:(ADJAttributionHandler*)selfI {
+    NSString *parameters = [ADJUtil queryString:selfI.attributionPackage.parameters];
+    NSString *relativePath = [NSString stringWithFormat:@"%@?%@", selfI.attributionPackage.path, parameters];
     NSURL *baseUrl = [NSURL URLWithString:ADJUtil.baseUrl];
     NSURL *url = [NSURL URLWithString:relativePath relativeToURL:baseUrl];
     
     return url;
+}
+
+- (void)teardown {
+    [ADJAdjustFactory.logger verbose:@"ADJAttributionHandler teardown"];
+
+    if (self.attributionTimer != nil) {
+        [self.attributionTimer cancel];
+    }
+    self.internalQueue = nil;
+    self.activityHandler = nil;
+    self.logger = nil;
+    self.attributionTimer = nil;
+    self.attributionPackage = nil;
 }
 
 @end

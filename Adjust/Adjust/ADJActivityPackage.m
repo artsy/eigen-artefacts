@@ -49,6 +49,15 @@
             self.suffix];
 }
 
+- (NSInteger)getRetries {
+    return self.retries;
+}
+
+- (NSInteger)increaseRetries {
+    self.retries = self.retries + 1;
+    return self.retries;
+}
+
 #pragma mark NSCoding
 - (id)initWithCoder:(NSCoder *)decoder {
     self = [super init];
@@ -62,6 +71,8 @@
 
     self.activityKind = [ADJActivityKindUtil activityKindFromString:kindString];
 
+    self.callbackParameters = [decoder decodeObjectForKey:@"callbackParameters"];
+    self.partnerParameters = [decoder decodeObjectForKey:@"partnerParameters"];
     return self;
 }
 
@@ -73,6 +84,8 @@
     [encoder encodeObject:self.parameters forKey:@"parameters"];
     [encoder encodeObject:kindString forKey:@"kind"];
     [encoder encodeObject:self.suffix forKey:@"suffix"];
+    [encoder encodeObject:self.callbackParameters forKey:@"callbackParameters"];
+    [encoder encodeObject:self.partnerParameters forKey:@"partnerParameters"];
 }
 
 @end
