@@ -92,6 +92,7 @@
     [self performRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
 
         if (error) {
+            NSLog(@"Check for update failed: %@", error);
             updateCheckCompleted(NO);
             return;
         }
@@ -104,6 +105,7 @@
             NSDate *lastUpdatedDate = [formatter dateFromString:updatedAtString];
 
             BOOL later = ([lastUpdatedDate compare:self.lastUpdatedDate] == NSOrderedDescending);
+            NSLog(@"Check for update (%@). Current settings: %@, new settings: %@", @(later), self.lastUpdatedDate, lastUpdatedDate);
             updateCheckCompleted(later);
             return;
         }
@@ -119,10 +121,12 @@
     [self performRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
 
         if (error || data == nil) {
+            NSLog(@"Updating Echo data failed: %@, %@", error, data);
             completed(NO, error);
             return;
         }
 
+        NSLog(@"Fetched Echo data.");
         [self updateWithJSONData:data];
         BOOL saved = [self saveJSONToDisk:data];
         completed(saved, nil);
@@ -175,6 +179,7 @@
 - (void)performRequest:(NSURLRequest *)request completionHandler:(void (^)(NSData *data, NSURLResponse *response, NSError *error))completionHandler;
 {
     NSURLSessionConfiguration *configuration = [NSURLSessionConfiguration defaultSessionConfiguration];
+    configuration.requestCachePolicy = NSURLRequestReloadIgnoringCacheData;
     NSURLSession *session = [NSURLSession sessionWithConfiguration:configuration];
     NSURLSessionDataTask *task = [session dataTaskWithRequest:request completionHandler:completionHandler];
     [task resume];
