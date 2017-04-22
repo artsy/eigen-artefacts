@@ -8,10 +8,7 @@
 
 #import <XCTest/XCTest.h>
 
-#define HC_SHORTHAND
 #import <OCHamcrestIOS/OCHamcrestIOS.h>
-
-#define MOCKITO_SHORTHAND
 #import <OCMockitoIOS/OCMockitoIOS.h>
 
 #import "HockeySDK.h"
@@ -42,7 +39,7 @@
                                     forServiceName:@"Test"
                                     updateExisting:YES
                                              error:nil];
-  assertThatBool(success, equalToBool(YES));
+  assertThatBool(success, isTrue());
   NSString *pass = [BITKeychainUtils getPasswordForUsername:@"Peter"
                                              andServiceName:@"Test"
                                                       error:NULL];
@@ -57,7 +54,7 @@
                                     updateExisting:YES
                                      accessibility:kSecAttrAccessibleAlwaysThisDeviceOnly
                                              error:nil];
-  assertThatBool(success, equalToBool(YES));
+  assertThatBool(success, isTrue());
   NSString *pass = [BITKeychainUtils getPasswordForUsername:@"Peter"
                                              andServiceName:@"Test"
                                                       error:NULL];
@@ -72,7 +69,7 @@
                    updateExisting:YES
                             error:nil];
   BOOL success = [BITKeychainUtils deleteItemForUsername:@"Peter" andServiceName:@"Test" error:nil];
-  assertThatBool(success, equalToBool(YES));
+  assertThatBool(success, isTrue());
   
   NSString *pass = [BITKeychainUtils getPasswordForUsername:@"Peter"
                                              andServiceName:@"Test"

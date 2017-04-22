@@ -26,9 +26,14 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/**
+ * This is the template feature config that is used for debug builds and during development. 
+ * For the Distribution target, we are using separate configs that will be copied over in our build script.
+ */
+
+
 #ifndef HockeySDK_HockeySDKFeatureConfig_h
 #define HockeySDK_HockeySDKFeatureConfig_h
-
 
 /**
  * If true, include support for handling crash reports
@@ -79,5 +84,14 @@
 #    define HOCKEYSDK_FEATURE_UPDATES 1
 #endif /* HOCKEYSDK_FEATURE_UPDATES */
 
+
+/**
+ * If true, include support for auto collecting metrics data such as sessions and user
+ *
+ * _Default_: Enabled
+ */
+#ifndef HOCKEYSDK_FEATURE_METRICS
+#    define HOCKEYSDK_FEATURE_METRICS 1
+#endif /* HOCKEYSDK_FEATURE_METRICS */
 
 #endif /* HockeySDK_HockeySDKFeatureConfig_h */

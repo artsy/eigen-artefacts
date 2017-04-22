@@ -55,7 +55,7 @@
 #pragma mark - private
 
 - (void)reportError:(NSError *)error {
-  BITHockeyLog(@"ERROR: %@", [error localizedDescription]);
+  BITHockeyLogError(@"ERROR: %@", [error localizedDescription]);
   _lastCheckFailed = YES;
 }
 
@@ -128,7 +128,7 @@
     self.updateSetting = BITStoreUpdateCheckWeekly;
 
     if (!BITHockeyBundle()) {
-      NSLog(@"[HockeySDK] WARNING: %@ is missing, built in UI is deactivated!", BITHOCKEYSDK_BUNDLE);
+      BITHockeyLogWarning(@"[HockeySDK] WARNING: %@ is missing, built in UI is deactivated!", BITHOCKEYSDK_BUNDLE);
     }
   }
   return self;
@@ -165,8 +165,11 @@
         [self.userDefaults removeObjectForKey:kBITStoreUpdateLastStoreVersion];
         versionString = nil;
       }
-
-      [self.userDefaults synchronize];
+      
+      if(bit_isPreiOS8Environment()) {
+        // calling synchronize in pre-iOS 8 takes longer to sync than in iOS 8+, calling synchronize explicitly.
+        [self.userDefaults synchronize];
+      }
     }
   }
   
@@ -188,7 +191,7 @@
     NSString *ignoredVersion = nil;
     if ([self.userDefaults objectForKey:kBITStoreUpdateIgnoreVersion]) {
       ignoredVersion = [self.userDefaults objectForKey:kBITStoreUpdateIgnoreVersion];
-      BITHockeyLog(@"INFO: Ignored version: %@", ignoredVersion);
+      BITHockeyLogDebug(@"INFO: Ignored version: %@", ignoredVersion);
     }
     
     if (!_newStoreVersion || !_appStoreURLString) {
@@ -205,10 +208,9 @@
       // since they could change at any time
       [self.userDefaults setObject:_currentUUID forKey:kBITStoreUpdateLastUUID];
       [self.userDefaults setObject:_newStoreVersion forKey:kBITStoreUpdateLastStoreVersion];
-      [self.userDefaults synchronize];
       return NO;
     } else {
-      BITHockeyLog(@"INFO: Compare new version string %@ with %@", _newStoreVersion, lastStoreVersion);
+      BITHockeyLogDebug(@"INFO: Compare new version string %@ with %@", _newStoreVersion, lastStoreVersion);
       
       NSComparisonResult comparisonResult = bit_versionCompare(_newStoreVersion, lastStoreVersion);
       
@@ -261,8 +263,15 @@
 #pragma mark - Private
 
 - (BOOL)shouldCancelProcessing {
-  if (self.appEnvironment != BITEnvironmentAppStore) return YES;
-  if (![self isStoreUpdateManagerEnabled]) return YES;
+  if (self.appEnvironment != BITEnvironmentAppStore) {
+    BITHockeyLogWarning(@"WARNING: StoreUpdateManager is cancelled because it's not running in an AppStore environment");
+    return YES;
+  }
+  
+  if (![self isStoreUpdateManagerEnabled]) {
+    return YES;
+  }
+  
   return NO;
 }
 
@@ -276,7 +285,7 @@
   NSDictionary *json = (NSDictionary *)[NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
   
   if (error) {
-    BITHockeyLog(@"ERROR: Invalid JSON string. %@", [error localizedDescription]);
+    BITHockeyLogError(@"ERROR: Invalid JSON string. %@", [error localizedDescription]);
     return NO;
   }
   
@@ -285,10 +294,10 @@
   
   self.updateAvailable = [self hasNewVersion:json];
   
-  BITHockeyLog(@"INFO: Update available: %i", self.updateAvailable);
+  BITHockeyLogDebug(@"INFO: Update available: %i", self.updateAvailable);
   
   if (_lastCheckFailed) {
-    BITHockeyLog(@"ERROR: Last check failed");
+    BITHockeyLogError(@"ERROR: Last check failed");
     return NO;
   }
   
@@ -302,7 +311,6 @@
     } else {
       // Ignore this version
       [self.userDefaults setObject:_newStoreVersion forKey:kBITStoreUpdateIgnoreVersion];
-      [self.userDefaults synchronize];
     }
   }
   
@@ -320,7 +328,7 @@
   
   // do we need to update?
   if (!manual && ![self shouldAutoCheckForUpdates]) {
-    BITHockeyLog(@"INFO: Update check not needed right now");
+    BITHockeyLogDebug(@"INFO: Update check not needed right now");
     self.checkInProgress = NO;
     return;
   }
@@ -334,7 +342,7 @@
       country = [NSString stringWithFormat:@"&country=%@", [(NSDictionary *)self.currentLocale objectForKey:NSLocaleCountryCode]];
     } else {
       // don't check, just to be save
-      BITHockeyLog(@"ERROR: Locale returned nil, can't determine the store to use!");
+      BITHockeyLogError(@"ERROR: Locale returned nil, can't determine the store to use!");
       self.checkInProgress = NO;
       return;
     }
@@ -346,21 +354,23 @@
                    bit_URLEncodedString(appBundleIdentifier),
                    country];
   
-  BITHockeyLog(@"INFO: Sending request to %@", url);
+  BITHockeyLogDebug(@"INFO: Sending request to %@", url);
   
   NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:url] cachePolicy:1 timeoutInterval:10.0];
   [request setHTTPMethod:@"GET"];
   [request setValue:@"gzip" forHTTPHeaderField:@"Accept-Encoding"];
   
   __weak typeof (self) weakSelf = self;
-  id nsurlsessionClass = NSClassFromString(@"NSURLSessionUploadTask");
-  if (nsurlsessionClass && !bit_isRunningInAppExtension()) {
+  if ([BITHockeyHelper isURLSessionSupported]) {
     NSURLSessionConfiguration *sessionConfiguration = [NSURLSessionConfiguration defaultSessionConfiguration];
-    NSURLSession *session = [NSURLSession sessionWithConfiguration:sessionConfiguration];
+    __block NSURLSession *session = [NSURLSession sessionWithConfiguration:sessionConfiguration];
     
     NSURLSessionDataTask *task = [session dataTaskWithRequest:request
                                             completionHandler: ^(NSData *data, NSURLResponse *response, NSError *error) {
                                               typeof (self) strongSelf = weakSelf;
+                                              
+                                              [session finishTasksAndInvalidate];
+                                              
                                               [strongSelf handleResponeWithData:data error:error];
                                             }];
     [task resume];
@@ -382,7 +392,7 @@
     [self reportError:error];
   } else if ([responseData length]) {
     NSString *responseString = [[NSString alloc] initWithBytes:[responseData bytes] length:[responseData length] encoding: NSUTF8StringEncoding];
-    BITHockeyLog(@"INFO: Received API response: %@", responseString);
+    BITHockeyLogWarning(@"INFO: Received API response: %@", responseString);
     
     if (!responseString || ![responseString dataUsingEncoding:NSUTF8StringEncoding]) {
       return;
@@ -405,7 +415,7 @@
 - (void)startManager {
   if ([self shouldCancelProcessing]) return;
   
-  BITHockeyLog(@"INFO: Start UpdateManager");
+  BITHockeyLogDebug(@"INFO: Start UpdateManager");
 
   if ([self.userDefaults objectForKey:kBITStoreUpdateDateOfLastCheck]) {
     self.lastCheck = [self.userDefaults objectForKey:kBITStoreUpdateDateOfLastCheck];
@@ -433,6 +443,7 @@
 #pragma mark - Alert
 
 - (void)showUpdateAlert {
+  dispatch_async(dispatch_get_main_queue(), ^{
   if (!_updateAlertShowing) {
     NSString *versionString = [NSString stringWithFormat:@"%@ %@", BITHockeyLocalizedString(@"UpdateVersion"), _newStoreVersion];
     /* We won't use this for now until we have a more robust solution for displaying UIAlertController
@@ -490,6 +501,7 @@
     
     _updateAlertShowing = YES;
   }
+  });
 }
 
 
@@ -500,7 +512,6 @@
     _lastCheck = aLastCheck;
     
     [self.userDefaults setObject:self.lastCheck forKey:kBITStoreUpdateDateOfLastCheck];
-    [self.userDefaults synchronize];
   }
 }
 
@@ -509,7 +520,6 @@
 - (void)ignoreAction {
   _updateAlertShowing = NO;
   [self.userDefaults setObject:_newStoreVersion forKey:kBITStoreUpdateIgnoreVersion];
-  [self.userDefaults synchronize];
 }
 
 - (void)remindAction {
@@ -519,12 +529,11 @@
 - (void)showAction {
   _updateAlertShowing = NO;
   [self.userDefaults setObject:_newStoreVersion forKey:kBITStoreUpdateIgnoreVersion];
-  [self.userDefaults synchronize];
   
   if (_appStoreURLString) {
     [[UIApplication sharedApplication] openURL:[NSURL URLWithString:_appStoreURLString]];
   } else {
-    BITHockeyLog(@"WARNING: The app store page couldn't be opened, since we did not get a valid URL from the store API.");
+    BITHockeyLogWarning(@"WARNING: The app store page couldn't be opened, since we did not get a valid URL from the store API.");
   }
 }
 

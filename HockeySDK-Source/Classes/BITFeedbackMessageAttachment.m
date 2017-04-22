@@ -95,7 +95,7 @@
 - (void)setData:(NSData *)data {
   self->_internalData = data;
   self.filename = [self possibleFilename];
-  [self->_internalData writeToFile:self.filename atomically:NO];
+  [self->_internalData writeToFile:self.filename atomically:YES];
 }
 
 - (NSData *)data {
@@ -107,7 +107,7 @@
     return self.internalData;
   }
   
-  return nil;
+  return [NSData data];
 }
 
 - (void)replaceData:(NSData *)data {
@@ -128,7 +128,7 @@
     return [NSURL fileURLWithPath:self.filename];
   }
   
-  return nil;
+  return [NSURL URLWithString:@""];
 }
 
 
@@ -220,14 +220,17 @@
   // File extension that suits the Content type.
   
   CFStringRef mimeType = (__bridge CFStringRef)self.contentType;
-  CFStringRef uti = UTTypeCreatePreferredIdentifierForTag(kUTTagClassMIMEType, mimeType, NULL);
-  CFStringRef extension = UTTypeCopyPreferredTagWithClass(uti, kUTTagClassFilenameExtension);
-  if (extension) {
-    _tempFilename = [_tempFilename stringByAppendingPathExtension:(__bridge NSString *)(extension)];
-    CFRelease(extension);
+  if (mimeType) {
+    CFStringRef uti = UTTypeCreatePreferredIdentifierForTag(kUTTagClassMIMEType, mimeType, NULL);
+    CFStringRef extension = UTTypeCopyPreferredTagWithClass(uti, kUTTagClassFilenameExtension);
+    if (extension) {
+      _tempFilename = [_tempFilename stringByAppendingPathExtension:(__bridge NSString *)(extension)];
+      CFRelease(extension);
+    }
+    if (uti) {
+      CFRelease(uti);
+    }
   }
-  
-  CFRelease(uti);
   
   return _tempFilename;
 }
@@ -256,7 +259,7 @@
     }
   }
   
-  return nil;
+  return [NSURL URLWithString:[[NSBundle mainBundle] pathForResource:@"FeedbackPlaceholder" ofType:@"png"]];
 }
 
 @end

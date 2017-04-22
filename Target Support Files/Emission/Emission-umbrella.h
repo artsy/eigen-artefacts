@@ -14,8 +14,8 @@
 #import "AREventsModule.h"
 #import "ARSwitchBoardModule.h"
 #import "ARRefineOptionsModule.h"
+#import "ARWorksForYouModule.h"
 #import "ARLoadFailureViewManager.h"
-#import "AROpaqueImageShadowView.h"
 #import "AROpaqueImageView.h"
 #import "AROpaqueImageViewManager.h"
 #import "ARSpinnerManager.h"
@@ -25,6 +25,7 @@
 #import "ARComponentViewController.h"
 #import "ARGeneComponentViewController.h"
 #import "ARHomeComponentViewController.h"
+#import "ARWorksForYouComponentViewController.h"
 
 FOUNDATION_EXPORT double EmissionVersionNumber;
 FOUNDATION_EXPORT const unsigned char EmissionVersionString[];

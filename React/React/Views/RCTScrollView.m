@@ -14,11 +14,14 @@
 #import "RCTConvert.h"
 #import "RCTEventDispatcher.h"
 #import "RCTLog.h"
-#import "RCTRefreshControl.h"
 #import "RCTUIManager.h"
 #import "RCTUtils.h"
 #import "UIView+Private.h"
 #import "UIView+React.h"
+
+#if !TARGET_OS_TV
+#import "RCTRefreshControl.h"
+#endif
 
 CGFloat const ZINDEX_DEFAULT = 0;
 CGFloat const ZINDEX_STICKY_HEADER = 50;
@@ -136,18 +139,19 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
  * default UIKit behaviors such as textFields automatically scrolling
  * scroll views that contain them and support sticky headers.
  */
-@interface RCTCustomScrollView : UIScrollView<UIGestureRecognizerDelegate, RCTClippingView>
+@interface RCTCustomScrollView : UIScrollView<UIGestureRecognizerDelegate>
 
 @property (nonatomic, copy) NSIndexSet *stickyHeaderIndices;
 @property (nonatomic, assign) BOOL centerContent;
+#if !TARGET_OS_TV
 @property (nonatomic, strong) RCTRefreshControl *rctRefreshControl;
+#endif
 
 @end
 
 
 @implementation RCTCustomScrollView
 {
-  BOOL _removeClippedSubviews;
   __weak UIView *_dockedHeaderView;
 }
 
@@ -276,9 +280,11 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
   CGFloat scrollTop = self.bounds.origin.y + self.contentInset.top;
   // If the RefreshControl is refreshing, remove it's height so sticky headers are
   // positioned properly when scrolling down while refreshing.
+#if !TARGET_OS_TV
   if (_rctRefreshControl != nil && _rctRefreshControl.refreshing) {
     scrollTop -= _rctRefreshControl.frame.size.height;
   }
+#endif
 
   // Find the section headers that need to be docked
   __block UIView *previousHeader = nil;
@@ -359,6 +365,34 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
   return [super hitTest:point withEvent:event];
 }
 
+static inline BOOL isRectInvalid(CGRect rect) {
+  return isnan(rect.origin.x) || isinf(rect.origin.x) ||
+    isnan(rect.origin.y) || isinf(rect.origin.y) ||
+    isnan(rect.size.width) || isinf(rect.size.width) ||
+    isnan(rect.size.height) || isinf(rect.size.height);
+}
+
+- (void)setBounds:(CGRect)bounds
+{
+  if (isRectInvalid(bounds)) {
+    RCTLogError(@"Attempted to set an invalid bounds to inner scrollview: %@", NSStringFromCGRect(bounds));
+    return;
+  }
+
+  [super setBounds:bounds];
+}
+
+- (void)setFrame:(CGRect)frame
+{
+  if (isRectInvalid(frame)) {
+    RCTLogError(@"Attempted to set an invalid frame to inner scrollview: %@", NSStringFromCGRect(frame));
+    return;
+  }
+
+  [super setFrame:frame];
+}
+
+#if !TARGET_OS_TV
 - (void)setRctRefreshControl:(RCTRefreshControl *)refreshControl
 {
   if (_rctRefreshControl) {
@@ -367,49 +401,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
   _rctRefreshControl = refreshControl;
   [self addSubview:_rctRefreshControl];
 }
-
-#pragma mark - RCTClippingView
-
-- (void)reclipView:(UIView<RCTClippableView> *)clippableView
-{
-  // noop, our child is the content view, which is never clipped
-}
-
-- (CGRect)clippingRectForClippingView:(UIView<RCTClippingView> *)clippingView
-{
-  RCTAssert(clippingView == [self contentView], @"Unexpected clipping view. Expected %@ got %@.", [self contentView], clippingView);
-  // Scrollview's content view is as big as all rows together. If we used its bound for clipping it wouldn't achieve anything.
-  // So we use our (scrollview's) bounds.
-  return [self convertRect:self.bounds toView:clippingView];
-}
-
-- (void)setRemoveClippedSubviews:(BOOL)removeClippedSubviews
-{
-  if (removeClippedSubviews != _removeClippedSubviews) {
-    _removeClippedSubviews = removeClippedSubviews;
-    // No matter if clipping has been turned on or off the child views will do the right thing.
-    if ([self contentView]) {
-      [(UIView<RCTClippableView> *)[self contentView] setReactClippingSuperview:self];
-    }
-  }
-}
-
-- (BOOL)removeClippedSubviews
-{
-  return _removeClippedSubviews;
-}
-
-- (void)reactSetFrame:(CGRect)frame
-{
-  if (!CGRectEqualToRect(frame, self.frame)) {
-    [super setFrame:frame];
-    for (UIView *view in [[self contentView] reactSubviews]) {
-      if ([view conformsToProtocol:@protocol(RCTClippableView)]) {
-        [((UIView<RCTClippingView> *)[self contentView]) reclipView:(UIView<RCTClippableView> *)view];
-      }
-    }
-  }
-}
+#endif //TARGET_OS_TV
 
 @end
 
@@ -425,6 +417,10 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
   uint16_t _coalescingKey;
   NSString *_lastEmittedEventName;
   NSHashTable *_scrollListeners;
+  // The last non-zero value of translationAlongAxis from scrollViewWillEndDragging.
+  // Tells if user was scrolling forward or backward and is used to determine a correct
+  // snap index when the user stops scrolling with a tap on the scroll view.
+  CGFloat _lastNonZeroTranslationAlongAxis;
 }
 
 - (instancetype)initWithEventDispatcher:(RCTEventDispatcher *)eventDispatcher
@@ -455,27 +451,35 @@ RCT_NOT_IMPLEMENTED(- (instancetype)init)
 RCT_NOT_IMPLEMENTED(- (instancetype)initWithFrame:(CGRect)frame)
 RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
 
+- (void)setRemoveClippedSubviews:(__unused BOOL)removeClippedSubviews
+{
+  // Does nothing
+}
+
 - (void)insertReactSubview:(UIView *)view atIndex:(NSInteger)atIndex
 {
   [super insertReactSubview:view atIndex:atIndex];
+#if !TARGET_OS_TV
   if ([view isKindOfClass:[RCTRefreshControl class]]) {
     [_scrollView setRctRefreshControl:(RCTRefreshControl *)view];
-  } else {
+  } else
+#endif
+  {
     RCTAssert(_contentView == nil, @"RCTScrollView may only contain a single subview");
     _contentView = view;
     [_scrollView addSubview:view];
-    if ([_contentView conformsToProtocol:@protocol(RCTClippableView)]) {
-      [(UIView<RCTClippableView> *)_contentView setReactClippingSuperview:_scrollView];
-    }
   }
 }
 
 - (void)removeReactSubview:(UIView *)subview
 {
   [super removeReactSubview:subview];
+#if !TARGET_OS_TV
   if ([subview isKindOfClass:[RCTRefreshControl class]]) {
     [_scrollView setRctRefreshControl:nil];
-  } else {
+  } else
+#endif
+  {
     RCTAssert(_contentView == subview, @"Attempted to remove non-existent subview");
     _contentView = nil;
   }
@@ -514,14 +518,6 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
   _scrollView.clipsToBounds = clipsToBounds;
 }
 
-- (void)setRemoveClippedSubviews:(BOOL)removeClippedSubviews
-{
-  if (removeClippedSubviews != [super removeClippedSubviews]) {
-    [_scrollView setRemoveClippedSubviews:removeClippedSubviews];
-  }
-  [super setRemoveClippedSubviews:removeClippedSubviews];
-}
-
 - (void)dealloc
 {
   _scrollView.delegate = nil;
@@ -534,28 +530,28 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
   RCTAssert([self.subviews lastObject] == _scrollView, @"our only subview should be a scrollview");
 
   CGPoint originalOffset = _scrollView.contentOffset;
-  if (!CGRectEqualToRect(_scrollView.frame, self.bounds)) {
-    _scrollView.frame = self.bounds;
-
-    for (UIView *view in [_contentView reactSubviews]) {
-      if ([view conformsToProtocol:@protocol(RCTClippableView)]) {
-        UIView<RCTClippableView> *clippableView = (UIView<RCTClippableView> *)view;
-        [clippableView.reactClippingSuperview reclipView:clippableView];
-      }
-    }
-
-  }
+  _scrollView.frame = self.bounds;
   _scrollView.contentOffset = originalOffset;
 
+#if !TARGET_OS_TV
   // Adjust the refresh control frame if the scrollview layout changes.
   RCTRefreshControl *refreshControl = _scrollView.rctRefreshControl;
   if (refreshControl && refreshControl.refreshing) {
     refreshControl.frame = (CGRect){_scrollView.contentOffset, {_scrollView.frame.size.width, refreshControl.frame.size.height}};
   }
+#endif
+
+  [self updateClippedSubviews];
 }
 
 - (void)updateClippedSubviews
 {
+  // Find a suitable view to use for clipping
+  UIView *clipView = [self react_findClipView];
+  if (!clipView) {
+    return;
+  }
+
   static const CGFloat leeway = 1.0;
 
   const CGSize contentSize = _scrollView.contentSize;
@@ -570,12 +566,8 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
     (scrollsVertically && (bounds.size.height < leeway || fabs(_lastClippedToRect.origin.y - bounds.origin.y) >= leeway));
 
   if (shouldClipAgain) {
-    for (UIView *view in [_contentView reactSubviews]) {
-      if ([view conformsToProtocol:@protocol(RCTClippableView)]) {
-        UIView<RCTClippableView> *clippableView = (UIView<RCTClippableView> *)view;
-        [clippableView.reactClippingSuperview reclipView:clippableView];
-      }
-    }
+    const CGRect clipRect = CGRectInset(clipView.bounds, -leeway, -leeway);
+    [self react_updateClippedSubviewsWithClipRect:clipRect relativeToView:clipView];
     _lastClippedToRect = bounds;
   }
 }
@@ -596,6 +588,11 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
   _scrollView.contentOffset = contentOffset;
 }
 
+- (BOOL)isHorizontal:(UIScrollView *)scrollView
+{
+  return scrollView.contentSize.width > self.frame.size.width;
+}
+
 - (void)scrollToOffset:(CGPoint)offset
 {
   [self scrollToOffset:offset animated:YES];
@@ -603,6 +600,26 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
 
 - (void)scrollToOffset:(CGPoint)offset animated:(BOOL)animated
 {
+  if (!CGPointEqualToPoint(_scrollView.contentOffset, offset)) {
+    // Ensure at least one scroll event will fire
+    _allowNextScrollNoMatterWhat = YES;
+    [_scrollView setContentOffset:offset animated:animated];
+  }
+}
+
+/**
+ * If this is a vertical scroll view, scrolls to the bottom.
+ * If this is a horizontal scroll view, scrolls to the right.
+ */
+- (void)scrollToEnd:(BOOL)animated
+{
+  BOOL isHorizontal = [self isHorizontal:_scrollView];
+  CGPoint offset;
+  if (isHorizontal) {
+    offset = CGPointMake(_scrollView.contentSize.width - _scrollView.bounds.size.width, 0);
+  } else {
+    offset = CGPointMake(0, _scrollView.contentSize.height - _scrollView.bounds.size.height);
+  }
   if (!CGPointEqualToPoint(_scrollView.contentOffset, offset)) {
     // Ensure at least one scroll event will fire
     _allowNextScrollNoMatterWhat = YES;
@@ -735,7 +752,7 @@ RCT_SCROLL_EVENT_HANDLER(scrollViewDidZoom, onScroll)
     CGFloat snapToIntervalF = (CGFloat)self.snapToInterval;
 
     // Find which axis to snap
-    BOOL isHorizontal = (scrollView.contentSize.width > self.frame.size.width);
+    BOOL isHorizontal = [self isHorizontal:scrollView];
 
     // What is the current offset?
     CGFloat targetContentOffsetAlongAxis = isHorizontal ? targetContentOffset->x : targetContentOffset->y;
@@ -755,7 +772,14 @@ RCT_SCROLL_EVENT_HANDLER(scrollViewDidZoom, onScroll)
 
     // Pick snap point based on direction and proximity
     NSInteger snapIndex = floor((targetContentOffsetAlongAxis + alignmentOffset) / snapToIntervalF);
-    snapIndex = (translationAlongAxis < 0) ? snapIndex + 1 : snapIndex;
+    BOOL isScrollingForward = translationAlongAxis < 0;
+    BOOL wasScrollingForward = translationAlongAxis == 0 && _lastNonZeroTranslationAlongAxis < 0;
+    if (isScrollingForward || wasScrollingForward) {
+      snapIndex = snapIndex + 1;
+    }
+    if (translationAlongAxis != 0) {
+      _lastNonZeroTranslationAlongAxis = translationAlongAxis;
+    }
     CGFloat newTargetContentOffset = ( snapIndex * snapToIntervalF ) - alignmentOffset;
 
     // Set new targetContentOffset
@@ -971,9 +995,11 @@ RCT_SET_AND_PRESERVE_OFFSET(setIndicatorStyle, indicatorStyle, UIScrollViewIndic
 RCT_SET_AND_PRESERVE_OFFSET(setKeyboardDismissMode, keyboardDismissMode, UIScrollViewKeyboardDismissMode)
 RCT_SET_AND_PRESERVE_OFFSET(setMaximumZoomScale, maximumZoomScale, CGFloat)
 RCT_SET_AND_PRESERVE_OFFSET(setMinimumZoomScale, minimumZoomScale, CGFloat)
-RCT_SET_AND_PRESERVE_OFFSET(setPagingEnabled, isPagingEnabled, BOOL)
 RCT_SET_AND_PRESERVE_OFFSET(setScrollEnabled, isScrollEnabled, BOOL)
+#if !TARGET_OS_TV
+RCT_SET_AND_PRESERVE_OFFSET(setPagingEnabled, isPagingEnabled, BOOL)
 RCT_SET_AND_PRESERVE_OFFSET(setScrollsToTop, scrollsToTop, BOOL)
+#endif
 RCT_SET_AND_PRESERVE_OFFSET(setShowsHorizontalScrollIndicator, showsHorizontalScrollIndicator, BOOL)
 RCT_SET_AND_PRESERVE_OFFSET(setShowsVerticalScrollIndicator, showsVerticalScrollIndicator, BOOL)
 RCT_SET_AND_PRESERVE_OFFSET(setZoomScale, zoomScale, CGFloat);

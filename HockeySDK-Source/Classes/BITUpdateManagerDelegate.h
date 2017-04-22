@@ -39,6 +39,29 @@
 
 @optional
 
+///-----------------------------------------------------------------------------
+/// @name Update
+///-----------------------------------------------------------------------------
+
+/**
+ Return if update alert should be shown
+
+ If you want to display your own user interface when there is an update available,
+ implement this method, present your user interface and return _NO_. In this case
+ it is your responsibility to call `BITUpdateManager showUpdateView`
+
+ Note: This delegate will be invoked on startup and every time the app becomes
+ active again!
+
+ When returning _YES_ the default blocking UI will be shown.
+
+ When running the app from the App Store, this delegate is ignored.
+
+ @param updateManager The `BITUpdateManager` instance invoking this delegate
+ @param shortVersion The latest available version
+ @param version The latest available version
+ */
+- (BOOL)shouldDisplayUpdateAlertForUpdateManager:(BITUpdateManager *)updateManager forShortVersion:(NSString *)shortVersion forVersion:(NSString *)version;
 
 ///-----------------------------------------------------------------------------
 /// @name Expiry
@@ -133,25 +156,5 @@
  @param updateManager The `BITUpdateManager` instance invoking this delegate
  */
 - (void)updateManagerWillExitApp:(BITUpdateManager *)updateManager;
-
-
-#pragma mark - Deprecated
-
-///-----------------------------------------------------------------------------
-/// @name Update View Presentation Helper
-///-----------------------------------------------------------------------------
-
-/**
- Provide a parent view controller for the update user interface
- 
- If you don't have a `rootViewController` set on your `UIWindow` and the SDK cannot
- automatically find the current top most `UIViewController`, you can provide the 
- `UIViewController` that should be used to present the update user interface modal.
-
- @param updateManager The `BITUpdateManager` instance invoking this delegate
- 
- @deprecated Please use `BITHockeyManagerDelegate viewControllerForHockeyManager:componentManager:` instead
- */
-- (UIViewController *)viewControllerForUpdateManager:(BITUpdateManager *)updateManager DEPRECATED_ATTRIBUTE;
 
 @end

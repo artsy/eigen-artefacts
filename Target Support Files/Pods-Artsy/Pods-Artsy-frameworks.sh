@@ -145,6 +145,7 @@ if [[ "$CONFIGURATION" == "Debug" ]]; then
   install_framework "$BUILT_PRODUCTS_DIR/UICKeyChainStore/UICKeyChainStore.framework"
   install_framework "$BUILT_PRODUCTS_DIR/UIView+BooleanAnimations/UIView_BooleanAnimations.framework"
   install_framework "$BUILT_PRODUCTS_DIR/VCRURLConnection/VCRURLConnection.framework"
+  install_framework "$BUILT_PRODUCTS_DIR/Yoga/yoga.framework"
   install_framework "$BUILT_PRODUCTS_DIR/iRate/iRate.framework"
 fi
 if [[ "$CONFIGURATION" == "Store" ]]; then
@@ -204,6 +205,7 @@ if [[ "$CONFIGURATION" == "Store" ]]; then
   install_framework "$BUILT_PRODUCTS_DIR/UICKeyChainStore/UICKeyChainStore.framework"
   install_framework "$BUILT_PRODUCTS_DIR/UIView+BooleanAnimations/UIView_BooleanAnimations.framework"
   install_framework "$BUILT_PRODUCTS_DIR/VCRURLConnection/VCRURLConnection.framework"
+  install_framework "$BUILT_PRODUCTS_DIR/Yoga/yoga.framework"
   install_framework "$BUILT_PRODUCTS_DIR/iRate/iRate.framework"
 fi
 if [[ "$CONFIGURATION" == "Demo" ]]; then
@@ -263,6 +265,7 @@ if [[ "$CONFIGURATION" == "Demo" ]]; then
   install_framework "$BUILT_PRODUCTS_DIR/UICKeyChainStore/UICKeyChainStore.framework"
   install_framework "$BUILT_PRODUCTS_DIR/UIView+BooleanAnimations/UIView_BooleanAnimations.framework"
   install_framework "$BUILT_PRODUCTS_DIR/VCRURLConnection/VCRURLConnection.framework"
+  install_framework "$BUILT_PRODUCTS_DIR/Yoga/yoga.framework"
   install_framework "$BUILT_PRODUCTS_DIR/iRate/iRate.framework"
 fi
 if [ "${COCOAPODS_PARALLEL_CODE_SIGN}" == "true" ]; then

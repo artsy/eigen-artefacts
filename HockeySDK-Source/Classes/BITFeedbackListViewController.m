@@ -151,8 +151,7 @@
     //    self.view.backgroundColor = DEFAULT_BACKGROUNDCOLOR_OS7;
   }
   
-  id refreshClass = NSClassFromString(@"UIRefreshControl");
-  if (refreshClass) {
+  if ([UIRefreshControl class]) {
     self.refreshControl = [[UIRefreshControl alloc] init];
     [self.refreshControl addTarget:self action:@selector(reloadList) forControlEvents:UIControlEventValueChanged];
   } else {
@@ -163,8 +162,7 @@
 }
 
 - (void)startLoadingIndicator {
-  id refreshClass = NSClassFromString(@"UIRefreshControl");
-  if (refreshClass) {
+  if ([UIRefreshControl class]) {
     [self.refreshControl beginRefreshing];
   } else {
     self.navigationItem.rightBarButtonItem.enabled = NO;
@@ -172,8 +170,7 @@
 }
 
 - (void)stopLoadingIndicator {
-  id refreshClass = NSClassFromString(@"UIRefreshControl");
-  if (refreshClass) {
+  if ([UIRefreshControl class]) {
     [self.refreshControl endRefreshing];
   } else {
     self.navigationItem.rightBarButtonItem.enabled = YES;
@@ -181,8 +178,7 @@
 }
 
 - (BOOL)isRefreshingWithNewControl {
-  id refreshClass = NSClassFromString(@"UIRefreshControl");
-  if (refreshClass) {
+  if ([UIRefreshControl class]) {
     return [self.refreshControl isRefreshing];
   }
   return NO;
@@ -433,11 +429,6 @@
   
   if ([self.manager.delegate respondsToSelector:@selector(feedbackComposeViewController:didFinishWithResult:)]) {
     [self.manager.delegate feedbackComposeViewController:composeViewController didFinishWithResult:composeResult];
-  } else if ([self.manager.delegate respondsToSelector:@selector(feedbackComposeViewControllerDidFinish:)]) {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated"
-    [self.manager.delegate feedbackComposeViewControllerDidFinish:composeViewController];
-#pragma clang diagnostic pop
   }
 }
 
@@ -717,14 +708,16 @@
         attachment.isLoading = YES;
         NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:attachment.sourceURL]];
         __weak typeof (self) weakSelf = self;
-        id nsurlsessionClass = NSClassFromString(@"NSURLSessionDataTask");
-        if (nsurlsessionClass && !bit_isRunningInAppExtension()) {
+        if ([BITHockeyHelper isURLSessionSupported]) {
           NSURLSessionConfiguration *sessionConfiguration = [NSURLSessionConfiguration defaultSessionConfiguration];
-          NSURLSession *session = [NSURLSession sessionWithConfiguration:sessionConfiguration];
+          __block NSURLSession *session = [NSURLSession sessionWithConfiguration:sessionConfiguration];
           
           NSURLSessionDataTask *task = [session dataTaskWithRequest:request
                                                   completionHandler: ^(NSData *data, NSURLResponse *response, NSError *error) {
                                                     typeof (self) strongSelf = weakSelf;
+                                                    
+                                                    [session finishTasksAndInvalidate];
+                                                    
                                                     [strongSelf handleResponseForAttachment:attachment responseData:data error:error];
                                                   }];
           [task resume];
@@ -988,15 +981,17 @@
       NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:attachment.sourceURL]];
       
       __weak typeof (self) weakSelf = self;
-      id nsurlsessionClass = NSClassFromString(@"NSURLSessionDataTask");
-      if (nsurlsessionClass && !bit_isRunningInAppExtension()) {
+      if ([BITHockeyHelper isURLSessionSupported]) {
         NSURLSessionConfiguration *sessionConfiguration = [NSURLSessionConfiguration defaultSessionConfiguration];
-        NSURLSession *session = [NSURLSession sessionWithConfiguration:sessionConfiguration];
+        __block NSURLSession *session = [NSURLSession sessionWithConfiguration:sessionConfiguration];
         
         NSURLSessionDataTask *task = [session dataTaskWithRequest:request
                                                 completionHandler: ^(NSData *data, NSURLResponse *response, NSError *error) {
                                                   dispatch_async(dispatch_get_main_queue(), ^{
                                                     typeof (self) strongSelf = weakSelf;
+                                                    
+                                                    [session finishTasksAndInvalidate];
+                                                    
                                                     [strongSelf previewController:blockController updateAttachment:attachment data:data];
                                                   });
                                                 }];
@@ -1016,7 +1011,7 @@
     }
   }
   
-  return nil;
+  return [self placeholder];
 }
 
 - (void)previewController:(QLPreviewController *)controller updateAttachment:(BITFeedbackMessageAttachment *)attachment data:( NSData *)data {
@@ -1029,6 +1024,14 @@
   } else {
     [controller reloadData];
   }
+}
+
+- (BITFeedbackMessageAttachment *)placeholder {
+  UIImage *placeholderImage = bit_imageNamed(@"FeedbackPlaceHolder", BITHOCKEYSDK_BUNDLE);
+
+  BITFeedbackMessageAttachment *placeholder = [BITFeedbackMessageAttachment attachmentWithData:UIImageJPEGRepresentation(placeholderImage, 0.7f) contentType:@"image/jpeg"];
+  
+  return placeholder;
 }
 
 @end

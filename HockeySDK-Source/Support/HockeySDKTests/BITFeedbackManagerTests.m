@@ -8,13 +8,13 @@
 
 #import <XCTest/XCTest.h>
 
-#define HC_SHORTHAND
 #import <OCHamcrestIOS/OCHamcrestIOS.h>
-
-#define MOCKITO_SHORTHAND
 #import <OCMockitoIOS/OCMockitoIOS.h>
 
 #import "HockeySDK.h"
+
+#if HOCKEYSDK_FEATURE_FEEDBACK
+
 #import "HockeySDKPrivate.h"
 #import "BITFeedbackManager.h"
 #import "BITFeedbackManagerPrivate.h"
@@ -25,27 +25,27 @@
 
 @interface BITFeedbackManagerTests : XCTestCase
 
+@property BITFeedbackManager *sut;
+
 @end
 
-@implementation BITFeedbackManagerTests {
-  BITFeedbackManager *_sut;
-}
+@implementation BITFeedbackManagerTests
 
 - (void)setUp {
   [super setUp];
 
   BITHockeyManager *hm = [BITHockeyManager sharedHockeyManager];
   hm.delegate = nil;
-  _sut = [[BITFeedbackManager alloc] initWithAppIdentifier:nil appEnvironment:BITEnvironmentOther];
-  _sut.delegate = nil;
+  self.sut = [[BITFeedbackManager alloc] initWithAppIdentifier:nil appEnvironment:BITEnvironmentOther];
+  self.sut.delegate = nil;
 }
 
 - (void)tearDown {
-  [_sut removeKeyFromKeychain:kBITHockeyMetaUserID];
-  [_sut removeKeyFromKeychain:kBITHockeyMetaUserName];
-  [_sut removeKeyFromKeychain:kBITHockeyMetaUserEmail];
+  [self.sut removeKeyFromKeychain:kBITHockeyMetaUserID];
+  [self.sut removeKeyFromKeychain:kBITHockeyMetaUserName];
+  [self.sut removeKeyFromKeychain:kBITHockeyMetaUserEmail];
 
-  _sut = nil;
+  self.sut = nil;
   
   [super tearDown];
 }
@@ -53,11 +53,25 @@
 #pragma mark - Private
 
 - (void)startManager {
-  [_sut startManager];
+  [self.sut startManager];
 }
 
 #pragma mark - Setup Tests
 
+- (void)testSetup {
+  XCTAssertNotNil(self.sut);
+  XCTAssertTrue([self.sut feedbackObservationMode] == BITFeedbackObservationNone);
+  XCTAssertNil(self.sut.tapRecognizer);
+  XCTAssertFalse([self.sut isFeedbackManagerDisabled]);
+  XCTAssertFalse([self.sut observationModeOnScreenshotEnabled]);
+  XCTAssertFalse([self.sut observationModeThreeFingerTapEnabled]);
+  XCTAssertNil([self.sut userEmail]);
+  XCTAssertNil([self.sut userID]);
+  XCTAssertNil([self.sut userName]);
+  XCTAssertNil([self.sut lastMessageID]);
+  XCTAssertNil([self.sut lastCheck]);
+  XCTAssertFalse([self.sut didAskUserData]);
+}
 
 #pragma mark - User Metadata
 
@@ -65,48 +79,48 @@
   BITHockeyManager *hm = [BITHockeyManager sharedHockeyManager];
   id delegateMock = mockProtocol(@protocol(BITHockeyManagerDelegate));
   hm.delegate = delegateMock;
-  _sut.delegate = delegateMock;
+  self.sut.delegate = delegateMock;
   
-  BOOL dataAvailable = [_sut updateUserIDUsingKeychainAndDelegate];
+  BOOL dataAvailable = [self.sut updateUserIDUsingKeychainAndDelegate];
   
-  assertThatBool(dataAvailable, equalToBool(NO));
-  assertThat(_sut.userID, nilValue());
+  assertThatBool(dataAvailable, isFalse());
+  assertThat(self.sut.userID, nilValue());
   
-  [verifyCount(delegateMock, times(1)) userIDForHockeyManager:hm componentManager:_sut];
+  [verifyCount(delegateMock, times(1)) userIDForHockeyManager:hm componentManager:self.sut];
 }
 
 - (void)testUpdateUserIDWithDelegateReturningData {
   BITHockeyManager *hm = [BITHockeyManager sharedHockeyManager];
   NSObject <BITHockeyManagerDelegate> *classMock = mockObjectAndProtocol([NSObject class], @protocol(BITHockeyManagerDelegate));
-  [given([classMock userIDForHockeyManager:hm componentManager:_sut]) willReturn:@"test"];
+  [given([classMock userIDForHockeyManager:hm componentManager:self.sut]) willReturn:@"test"];
   hm.delegate = classMock;
-  _sut.delegate = classMock;
+  self.sut.delegate = classMock;
   
-  BOOL dataAvailable = [_sut updateUserIDUsingKeychainAndDelegate];
+  BOOL dataAvailable = [self.sut updateUserIDUsingKeychainAndDelegate];
   
-  assertThatBool(dataAvailable, equalToBool(YES));
-  assertThat(_sut.userID, equalTo(@"test"));
+  assertThatBool(dataAvailable, isTrue());
+  assertThat(self.sut.userID, equalTo(@"test"));
   
-  [verifyCount(classMock, times(1)) userIDForHockeyManager:hm componentManager:_sut];
+  [verifyCount(classMock, times(1)) userIDForHockeyManager:hm componentManager:self.sut];
 }
 
 - (void)testUpdateUserIDWithValueInKeychain {
-  [_sut addStringValueToKeychain:@"test" forKey:kBITHockeyMetaUserID];
+  [self.sut addStringValueToKeychain:@"test" forKey:kBITHockeyMetaUserID];
   
-  BOOL dataAvailable = [_sut updateUserIDUsingKeychainAndDelegate];
+  BOOL dataAvailable = [self.sut updateUserIDUsingKeychainAndDelegate];
   
-  assertThatBool(dataAvailable, equalToBool(YES));
-  assertThat(_sut.userID, equalTo(@"test"));
+  assertThatBool(dataAvailable, isTrue());
+  assertThat(self.sut.userID, equalTo(@"test"));
 }
 
 - (void)testUpdateUserIDWithGlobalSetter {
   BITHockeyManager *hm = [BITHockeyManager sharedHockeyManager];
   [hm setUserID:@"test"];
   
-  BOOL dataAvailable = [_sut updateUserIDUsingKeychainAndDelegate];
+  BOOL dataAvailable = [self.sut updateUserIDUsingKeychainAndDelegate];
   
-  assertThatBool(dataAvailable, equalToBool(YES));
-  assertThat(_sut.userID, equalTo(@"test"));
+  assertThatBool(dataAvailable, isTrue());
+  assertThat(self.sut.userID, equalTo(@"test"));
 }
 
 
@@ -114,48 +128,48 @@
   BITHockeyManager *hm = [BITHockeyManager sharedHockeyManager];
   id delegateMock = mockProtocol(@protocol(BITHockeyManagerDelegate));
   hm.delegate = delegateMock;
-  _sut.delegate = delegateMock;
+  self.sut.delegate = delegateMock;
   
-  BOOL dataAvailable = [_sut updateUserNameUsingKeychainAndDelegate];
+  BOOL dataAvailable = [self.sut updateUserNameUsingKeychainAndDelegate];
   
-  assertThatBool(dataAvailable, equalToBool(NO));
-  assertThat(_sut.userName, nilValue());
+  assertThatBool(dataAvailable, isFalse());
+  assertThat(self.sut.userName, nilValue());
   
-  [verifyCount(delegateMock, times(1)) userNameForHockeyManager:hm componentManager:_sut];
+  [verifyCount(delegateMock, times(1)) userNameForHockeyManager:hm componentManager:self.sut];
 }
 
 - (void)testUpdateUserNameWithDelegateReturningData {
   BITHockeyManager *hm = [BITHockeyManager sharedHockeyManager];
   NSObject <BITHockeyManagerDelegate> *classMock = mockObjectAndProtocol([NSObject class], @protocol(BITHockeyManagerDelegate));
-  [given([classMock userNameForHockeyManager:hm componentManager:_sut]) willReturn:@"test"];
+  [given([classMock userNameForHockeyManager:hm componentManager:self.sut]) willReturn:@"test"];
   hm.delegate = classMock;
-  _sut.delegate = classMock;
+  self.sut.delegate = classMock;
   
-  BOOL dataAvailable = [_sut updateUserNameUsingKeychainAndDelegate];
+  BOOL dataAvailable = [self.sut updateUserNameUsingKeychainAndDelegate];
   
-  assertThatBool(dataAvailable, equalToBool(YES));
-  assertThat(_sut.userName, equalTo(@"test"));
+  assertThatBool(dataAvailable, isTrue());
+  assertThat(self.sut.userName, equalTo(@"test"));
   
-  [verifyCount(classMock, times(1)) userNameForHockeyManager:hm componentManager:_sut];
+  [verifyCount(classMock, times(1)) userNameForHockeyManager:hm componentManager:self.sut];
 }
 
 - (void)testUpdateUserNameWithValueInKeychain {
-  [_sut addStringValueToKeychain:@"test" forKey:kBITHockeyMetaUserName];
+  [self.sut addStringValueToKeychain:@"test" forKey:kBITHockeyMetaUserName];
   
-  BOOL dataAvailable = [_sut updateUserNameUsingKeychainAndDelegate];
+  BOOL dataAvailable = [self.sut updateUserNameUsingKeychainAndDelegate];
   
-  assertThatBool(dataAvailable, equalToBool(YES));
-  assertThat(_sut.userName, equalTo(@"test"));
+  assertThatBool(dataAvailable, isTrue());
+  assertThat(self.sut.userName, equalTo(@"test"));
 }
 
 - (void)testUpdateUserNameWithGlobalSetter {
   BITHockeyManager *hm = [BITHockeyManager sharedHockeyManager];
   [hm setUserName:@"test"];
   
-  BOOL dataAvailable = [_sut updateUserNameUsingKeychainAndDelegate];
+  BOOL dataAvailable = [self.sut updateUserNameUsingKeychainAndDelegate];
   
-  assertThatBool(dataAvailable, equalToBool(YES));
-  assertThat(_sut.userName, equalTo(@"test"));
+  assertThatBool(dataAvailable, isTrue());
+  assertThat(self.sut.userName, equalTo(@"test"));
 }
 
 
@@ -163,70 +177,183 @@
   BITHockeyManager *hm = [BITHockeyManager sharedHockeyManager];
   id delegateMock = mockProtocol(@protocol(BITHockeyManagerDelegate));
   hm.delegate = delegateMock;
-  _sut.delegate = delegateMock;
+  self.sut.delegate = delegateMock;
   
-  BOOL dataAvailable = [_sut updateUserEmailUsingKeychainAndDelegate];
+  BOOL dataAvailable = [self.sut updateUserEmailUsingKeychainAndDelegate];
   
-  assertThatBool(dataAvailable, equalToBool(NO));
-  assertThat(_sut.userEmail, nilValue());
+  assertThatBool(dataAvailable, isFalse());
+  assertThat(self.sut.userEmail, nilValue());
   
-  [verifyCount(delegateMock, times(1)) userEmailForHockeyManager:hm componentManager:_sut];
+  [verifyCount(delegateMock, times(1)) userEmailForHockeyManager:hm componentManager:self.sut];
 }
 
 - (void)testUpdateUserEmailWithDelegateReturningData {
   BITHockeyManager *hm = [BITHockeyManager sharedHockeyManager];
   NSObject <BITHockeyManagerDelegate> *classMock = mockObjectAndProtocol([NSObject class], @protocol(BITHockeyManagerDelegate));
-  [given([classMock userEmailForHockeyManager:hm componentManager:_sut]) willReturn:@"test"];
+  [given([classMock userEmailForHockeyManager:hm componentManager:self.sut]) willReturn:@"test"];
   hm.delegate = classMock;
-  _sut.delegate = classMock;
+  self.sut.delegate = classMock;
   
-  BOOL dataAvailable = [_sut updateUserEmailUsingKeychainAndDelegate];
+  BOOL dataAvailable = [self.sut updateUserEmailUsingKeychainAndDelegate];
   
-  assertThatBool(dataAvailable, equalToBool(YES));
-  assertThat(_sut.userEmail, equalTo(@"test"));
+  assertThatBool(dataAvailable, isTrue());
+  assertThat(self.sut.userEmail, equalTo(@"test"));
   
-  [verifyCount(classMock, times(1)) userEmailForHockeyManager:hm componentManager:_sut];
+  [verifyCount(classMock, times(1)) userEmailForHockeyManager:hm componentManager:self.sut];
 }
 
 - (void)testUpdateUserEmailWithValueInKeychain {
-  [_sut addStringValueToKeychain:@"test" forKey:kBITHockeyMetaUserEmail];
+  [self.sut addStringValueToKeychain:@"test" forKey:kBITHockeyMetaUserEmail];
   
-  BOOL dataAvailable = [_sut updateUserEmailUsingKeychainAndDelegate];
+  BOOL dataAvailable = [self.sut updateUserEmailUsingKeychainAndDelegate];
   
-  assertThatBool(dataAvailable, equalToBool(YES));
-  assertThat(_sut.userEmail, equalTo(@"test"));
+  assertThatBool(dataAvailable, isTrue());
+  assertThat(self.sut.userEmail, equalTo(@"test"));
 }
 
 - (void)testUpdateUserEmailWithGlobalSetter {
   BITHockeyManager *hm = [BITHockeyManager sharedHockeyManager];
   [hm setUserEmail:@"test"];
   
-  BOOL dataAvailable = [_sut updateUserEmailUsingKeychainAndDelegate];
+  BOOL dataAvailable = [self.sut updateUserEmailUsingKeychainAndDelegate];
   
-  assertThatBool(dataAvailable, equalToBool(YES));
-  assertThat(_sut.userEmail, equalTo(@"test"));
+  assertThatBool(dataAvailable, isTrue());
+  assertThat(self.sut.userEmail, equalTo(@"test"));
 }
 
 - (void)testAllowFetchingNewMessages {
     BOOL fetchMessages = NO;
 
     // check the default
-    fetchMessages = [_sut allowFetchingNewMessages];
+    fetchMessages = [self.sut allowFetchingNewMessages];
     
-    assertThatBool(fetchMessages, equalToBool(YES));
+    assertThatBool(fetchMessages, isTrue());
     
     // check the delegate is implemented and returns NO
     BITHockeyManager *hm = [BITHockeyManager sharedHockeyManager];
     NSObject <BITHockeyManagerDelegate> *classMock = mockObjectAndProtocol([NSObject class], @protocol(BITHockeyManagerDelegate));
-    [given([classMock allowAutomaticFetchingForNewFeedbackForManager:_sut]) willReturn:@NO];
+    [given([classMock allowAutomaticFetchingForNewFeedbackForManager:self.sut]) willReturn:@NO];
     hm.delegate = classMock;
-    _sut.delegate = classMock;
+    self.sut.delegate = classMock;
     
-    fetchMessages = [_sut allowFetchingNewMessages];
+    fetchMessages = [self.sut allowFetchingNewMessages];
     
-    assertThatBool(fetchMessages, equalToBool(NO));
+    assertThatBool(fetchMessages, isFalse());
     
-    [verifyCount(classMock, times(1)) allowAutomaticFetchingForNewFeedbackForManager:_sut];
+    [verifyCount(classMock, times(1)) allowAutomaticFetchingForNewFeedbackForManager:self.sut];
+}
+
+- (void)testFeedbackObservationModeDefault {
+  XCTAssertTrue(self.sut.feedbackObservationMode == BITFeedbackObservationNone);
+  XCTAssertFalse(self.sut.observationModeOnScreenshotEnabled);
+  XCTAssertFalse(self.sut.observationModeThreeFingerTapEnabled);
+  XCTAssertNil(self.sut.tapRecognizer);
+}
+
+- (void)testSetFeedbackObservationMode {
+  [self.sut setFeedbackObservationMode:BITFeedbackObservationModeOnScreenshot];
+  XCTAssertTrue(self.sut.observationModeOnScreenshotEnabled);
+  XCTAssertFalse(self.sut.observationModeThreeFingerTapEnabled);
+  XCTAssertNil(self.sut.tapRecognizer);
+  XCTAssertTrue(self.sut.feedbackObservationMode == BITFeedbackObservationModeOnScreenshot);
+
+  [self.sut setFeedbackObservationMode:BITFeedbackObservationNone];
+  XCTAssertFalse(self.sut.observationModeOnScreenshotEnabled);
+  XCTAssertFalse(self.sut.observationModeThreeFingerTapEnabled);
+  XCTAssertNil(self.sut.tapRecognizer);
+  XCTAssertTrue(self.sut.feedbackObservationMode == BITFeedbackObservationNone);
+  
+  [self.sut setFeedbackObservationMode:BITFeedbackObservationModeThreeFingerTap];
+  XCTAssertFalse(self.sut.observationModeOnScreenshotEnabled);
+  XCTAssertTrue(self.sut.observationModeThreeFingerTapEnabled);
+  XCTAssertNotNil(self.sut.tapRecognizer);
+  XCTAssertTrue(self.sut.feedbackObservationMode == BITFeedbackObservationModeThreeFingerTap);
+  
+  [self.sut setFeedbackObservationMode:BITFeedbackObservationNone];
+  XCTAssertFalse(self.sut.observationModeOnScreenshotEnabled);
+  XCTAssertFalse(self.sut.observationModeThreeFingerTapEnabled);
+  XCTAssertNil(self.sut.tapRecognizer);
+  XCTAssertTrue(self.sut.feedbackObservationMode == BITFeedbackObservationNone);
+  
+  [self.sut setFeedbackObservationMode:BITFeedbackObservationModeThreeFingerTap];
+  XCTAssertFalse(self.sut.observationModeOnScreenshotEnabled);
+  XCTAssertTrue(self.sut.observationModeThreeFingerTapEnabled);
+  XCTAssertNotNil(self.sut.tapRecognizer);
+  XCTAssertTrue(self.sut.feedbackObservationMode == BITFeedbackObservationModeThreeFingerTap);
+
+  [self.sut setFeedbackObservationMode:BITFeedbackObservationModeOnScreenshot];
+  XCTAssertTrue(self.sut.observationModeOnScreenshotEnabled);
+  XCTAssertFalse(self.sut.observationModeThreeFingerTapEnabled);
+  XCTAssertNil(self.sut.tapRecognizer);
+  XCTAssertTrue(self.sut.feedbackObservationMode == BITFeedbackObservationModeOnScreenshot);
+
+  [self.sut setFeedbackObservationMode:BITFeedbackObservationModeThreeFingerTap];
+  XCTAssertFalse(self.sut.observationModeOnScreenshotEnabled);
+  XCTAssertTrue(self.sut.observationModeThreeFingerTapEnabled);
+  XCTAssertNotNil(self.sut.tapRecognizer);
+  XCTAssertTrue(self.sut.feedbackObservationMode == BITFeedbackObservationModeThreeFingerTap);
+
+  [self.sut setFeedbackObservationMode:BITFeedbackObservationNone];
+  XCTAssertFalse(self.sut.observationModeOnScreenshotEnabled);
+  XCTAssertFalse(self.sut.observationModeThreeFingerTapEnabled);
+  XCTAssertNil(self.sut.tapRecognizer);
+  XCTAssertTrue(self.sut.feedbackObservationMode == BITFeedbackObservationNone);
+
+  [self.sut setFeedbackObservationMode:BITFeedbackObservationModeAll];
+  XCTAssertTrue(self.sut.observationModeOnScreenshotEnabled);
+  XCTAssertTrue(self.sut.observationModeThreeFingerTapEnabled);
+  XCTAssertNotNil(self.sut.tapRecognizer);
+  XCTAssertTrue(self.sut.feedbackObservationMode == BITFeedbackObservationModeAll);
+
+  [self.sut setFeedbackObservationMode:BITFeedbackObservationModeThreeFingerTap];
+  XCTAssertFalse(self.sut.observationModeOnScreenshotEnabled);
+  XCTAssertTrue(self.sut.observationModeThreeFingerTapEnabled);
+  XCTAssertNotNil(self.sut.tapRecognizer);
+  XCTAssertTrue(self.sut.feedbackObservationMode == BITFeedbackObservationModeThreeFingerTap);
+
+  [self.sut setFeedbackObservationMode:BITFeedbackObservationModeAll];
+  XCTAssertTrue(self.sut.observationModeOnScreenshotEnabled);
+  XCTAssertTrue(self.sut.observationModeThreeFingerTapEnabled);
+  XCTAssertNotNil(self.sut.tapRecognizer);
+  XCTAssertTrue(self.sut.feedbackObservationMode == BITFeedbackObservationModeAll);
+
+  [self.sut setFeedbackObservationMode:BITFeedbackObservationModeOnScreenshot];
+  XCTAssertTrue(self.sut.observationModeOnScreenshotEnabled);
+  XCTAssertFalse(self.sut.observationModeThreeFingerTapEnabled);
+  XCTAssertNil(self.sut.tapRecognizer);
+  XCTAssertTrue(self.sut.feedbackObservationMode == BITFeedbackObservationModeOnScreenshot);
+
+  [self.sut setFeedbackObservationMode:BITFeedbackObservationModeThreeFingerTap];
+  XCTAssertFalse(self.sut.observationModeOnScreenshotEnabled);
+  XCTAssertTrue(self.sut.observationModeThreeFingerTapEnabled);
+  XCTAssertNotNil(self.sut.tapRecognizer);
+  XCTAssertTrue(self.sut.feedbackObservationMode == BITFeedbackObservationModeThreeFingerTap);
+
+
+}
+
+#pragma mark - FeedbackManagerDelegate Tests
+
+- (void)testFeedbackComposeViewController {
+  UIImage *sampleImage1 = [UIImage new];
+  NSData *sampleData1 = [NSData data];
+  
+  self.sut.feedbackComposeHideImageAttachmentButton = YES;
+  XCTAssertTrue(self.sut.feedbackComposeHideImageAttachmentButton);
+
+  id<BITFeedbackManagerDelegate> mockDelegate = mockProtocol(@protocol(BITFeedbackManagerDelegate));
+  [given([mockDelegate preparedItemsForFeedbackManager:self.sut]) willReturn:@[sampleImage1, sampleData1]];
+  self.sut.delegate = mockDelegate;
+  
+  BITFeedbackComposeViewController *composeViewController = [self.sut feedbackComposeViewController];
+  NSArray *attachments = [composeViewController performSelector:@selector(attachments)];
+  XCTAssertEqual(attachments.count, 2);
+  
+  XCTAssertTrue(composeViewController.hideImageAttachmentButton);
+  XCTAssertEqual(composeViewController.delegate, mockDelegate);
 }
 
 @end
+
+#endif /* HOCKEYSDK_FEATURE_FEEDBACK */
+

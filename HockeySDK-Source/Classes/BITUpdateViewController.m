@@ -393,9 +393,8 @@
         }
       }
     }
-    
-    BITWebTableViewCell *cell = [[BITWebTableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:kWebCellIdentifier];
-    [self configureWebCell:cell forAppVersion:appVersion];
+
+    BITWebTableViewCell *cell = [self webCellWithAppVersion:appVersion];
     [_cells addObject:cell];
     
     if (breakAfterThisAppVersion) break;
@@ -403,6 +402,12 @@
   
   [self.tableView reloadData];
   [self showHidePreviousVersionsButton];
+}
+
+- (BITWebTableViewCell *)webCellWithAppVersion:(BITAppVersionMetaInfo *)appVersion {
+  BITWebTableViewCell *cell = [[BITWebTableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:kWebCellIdentifier];
+  [self configureWebCell:cell forAppVersion:appVersion];
+  return cell;
 }
 
 - (void)showPreviousVersionAction {
@@ -420,10 +425,8 @@
         continue; // skip already shown
       }
     }
-    
-    BITWebTableViewCell *cell = [[BITWebTableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:kWebCellIdentifier];
-    [self configureWebCell:cell forAppVersion:appVersion];
-    [_cells addObject:cell];
+
+    [_cells addObject:[self webCellWithAppVersion:appVersion]];
   }
   [self.tableView reloadData];
   [self showHidePreviousVersionsButton];
@@ -491,9 +494,10 @@
   if ([_cells count] > (NSUInteger)indexPath.row) {
     return [_cells objectAtIndex:indexPath.row];
   } else {
-    BITHockeyLog(@"Warning: cells_ and indexPath do not match? forgot calling redrawTableView?");
+    BITHockeyLogWarning(@"Warning: cells_ and indexPath do not match? forgot calling redrawTableView? Returning empty UITableViewCell");
+    return [UITableViewCell new];
+
   }
-  return nil;
 }
 
 
