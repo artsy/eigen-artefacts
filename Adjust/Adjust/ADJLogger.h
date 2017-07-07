@@ -17,23 +17,68 @@ typedef enum {
     ADJLogLevelSuppress = 7
 } ADJLogLevel;
 
-// A simple logger with multiple log levels.
+/**
+ * @brief Adjust logger protocol.
+ */
 @protocol ADJLogger
 
-- (void)setLogLevel:(ADJLogLevel)logLevel;
+/**
+ * @brief Set the log level of the SDK.
+ *
+ * @param logLevel Level of the logs to be displayed.
+ */
+- (void)setLogLevel:(ADJLogLevel)logLevel isProductionEnvironment:(BOOL)isProductionEnvironment;
+
+/**
+ * @brief Prevent log level changes.
+ */
 - (void)lockLogLevel;
 
-- (void)verbose:(NSString *)message, ...;
-- (void)debug:  (NSString *)message, ...;
-- (void)info:   (NSString *)message, ...;
-- (void)warn:   (NSString *)message, ...;
-- (void)error:  (NSString *)message, ...;
-- (void)assert: (NSString *)message, ...;
+/**
+ * @brief Print verbose logs.
+ */
+- (void)verbose:(nonnull NSString *)message, ...;
+
+/**
+ * @brief Print debug logs.
+ */
+- (void)debug:(nonnull NSString *)message, ...;
+
+/**
+ * @brief Print info logs.
+ */
+- (void)info:(nonnull NSString *)message, ...;
+
+/**
+ * @brief Print warn logs.
+ */
+- (void)warn:(nonnull NSString *)message, ...;
+- (void)warnInProduction:(nonnull NSString *)message, ...;
+
+/**
+ * @brief Print error logs.
+ */
+- (void)error:(nonnull NSString *)message, ...;
+
+/**
+ * @brief Print assert logs.
+ */
+- (void)assert:(nonnull NSString *)message, ...;
 
 @end
 
-@interface ADJLogger : NSObject <ADJLogger>
+/**
+ * @brief Adjust logger class.
+ */
+@interface ADJLogger : NSObject<ADJLogger>
 
-+ (ADJLogLevel) LogLevelFromString: (NSString *) logLevelString;
+/**
+ * @brief Convert log level string to ADJLogLevel enumeration.
+ *
+ * @param logLevelString Log level as string.
+ *
+ * @return Log level as ADJLogLevel enumeration.
+ */
++ (ADJLogLevel)LogLevelFromString:(nonnull NSString *)logLevelString;
 
 @end

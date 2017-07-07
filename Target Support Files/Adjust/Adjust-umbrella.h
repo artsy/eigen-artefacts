@@ -19,6 +19,7 @@
 #import "ADJAttributionHandler.h"
 #import "ADJBackoffStrategy.h"
 #import "ADJConfig.h"
+#import "ADJConnectionValidator.h"
 #import "ADJDeviceInfo.h"
 #import "ADJEvent.h"
 #import "ADJEventFailure.h"

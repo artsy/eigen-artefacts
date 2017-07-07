@@ -23,8 +23,12 @@
 #import "ARTemporaryAPIModule.h"
 #import "ARArtistComponentViewController.h"
 #import "ARComponentViewController.h"
+#import "ARConversationComponentViewController.h"
 #import "ARGeneComponentViewController.h"
 #import "ARHomeComponentViewController.h"
+#import "ARInboxComponentViewController.h"
+#import "ARInquiryComponentViewController.h"
+#import "ARMediaPreviewController.h"
 #import "ARWorksForYouComponentViewController.h"
 
 FOUNDATION_EXPORT double EmissionVersionNumber;

@@ -1,6 +1,6 @@
 CONFIGURATION_BUILD_DIR = $PODS_CONFIGURATION_BUILD_DIR/HockeySDK-Source
 FRAMEWORK_SEARCH_PATHS = $(inherited) "${PODS_ROOT}/HockeySDK-Source/Vendor"
-GCC_PREPROCESSOR_DEFINITIONS = $(inherited) COCOAPODS=1 $(inherited) BITHOCKEY_VERSION="@\"4.1.4\"" BITHOCKEY_C_VERSION="\"4.1.4\"" BITHOCKEY_BUILD="@\"99\"" BITHOCKEY_C_BUILD="\"99\""
+GCC_PREPROCESSOR_DEFINITIONS = $(inherited) COCOAPODS=1 $(inherited) BITHOCKEY_VERSION="@\"4.1.5\"" BITHOCKEY_C_VERSION="\"4.1.5\"" BITHOCKEY_BUILD="@\"100\"" BITHOCKEY_C_BUILD="\"100\""
 HEADER_SEARCH_PATHS = "${PODS_ROOT}/Headers/Private" "${PODS_ROOT}/Headers/Public"
 OTHER_LDFLAGS = -l"c++" -l"z" -framework "AssetsLibrary" -framework "CoreGraphics" -framework "CoreTelephony" -framework "CoreText" -framework "CrashReporter" -framework "MobileCoreServices" -framework "Photos" -framework "QuartzCore" -framework "QuickLook" -framework "Security" -framework "SystemConfiguration" -framework "UIKit"
 PODS_BUILD_DIR = $BUILD_DIR

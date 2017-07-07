@@ -11,30 +11,37 @@
 
 @implementation ADJResponseData
 
+- (id)init {
+    self = [super init];
+    
+    if (self == nil) {
+        return nil;
+    }
+    
+    return self;
+}
+
 + (ADJResponseData *)responseData {
     return [[ADJResponseData alloc] init];
 }
 
-- (id)init {
-    self = [super init];
-    if (self == nil) return nil;
-
-    return self;
-}
-
 + (id)buildResponseData:(ADJActivityPackage *)activityPackage {
     ADJActivityKind activityKind;
+    
     if (activityPackage == nil) {
         activityKind = ADJActivityKindUnknown;
     } else {
         activityKind = activityPackage.activityKind;
     }
 
-    ADJResponseData * responseData = nil;
+    ADJResponseData *responseData = nil;
 
     switch (activityKind) {
         case ADJActivityKindSession:
             responseData = [[ADJSessionResponseData alloc] init];
+            break;
+        case ADJActivityKindClick:
+            responseData = [[ADJSdkClickResponseData alloc] init];
             break;
         case ADJActivityKindEvent:
             responseData = [[ADJEventResponseData alloc] initWithActivityPackage:activityPackage];
@@ -59,18 +66,18 @@
 
 #pragma mark - NSCopying
 
--(id)copyWithZone:(NSZone *)zone
-{
+- (id)copyWithZone:(NSZone *)zone {
     ADJResponseData* copy = [[[self class] allocWithZone:zone] init];
 
     if (copy) {
-        copy.message      = [self.message copyWithZone:zone];
-        copy.timeStamp    = [self.timeStamp copyWithZone:zone];
-        copy.adid         = [self.adid copyWithZone:zone];
-        copy.success      = self.success;
-        copy.willRetry    = self.willRetry;
+        copy.message = [self.message copyWithZone:zone];
+        copy.timeStamp = [self.timeStamp copyWithZone:zone];
+        copy.adid = [self.adid copyWithZone:zone];
+        copy.success = self.success;
+        copy.willRetry = self.willRetry;
+        copy.validationResult = self.validationResult;
         copy.jsonResponse = [self.jsonResponse copyWithZone:zone];
-        copy.attribution  = [self.attribution copyWithZone:zone];
+        copy.attribution = [self.attribution copyWithZone:zone];
     }
 
     return copy;
@@ -82,13 +89,17 @@
 
 - (id)initWithActivityPackage:(ADJActivityPackage *)activityPackage {
     self = [super init];
-    if (self == nil) return nil;
+
+    if (self == nil) {
+        return nil;
+    }
 
     return self;
 }
 
 - (ADJSessionSuccess *)successResponseData {
-    ADJSessionSuccess * successResponseData = [ADJSessionSuccess sessionSuccessResponseData];
+    ADJSessionSuccess *successResponseData = [ADJSessionSuccess sessionSuccessResponseData];
+
     successResponseData.message = self.message;
     successResponseData.timeStamp = self.timeStamp;
     successResponseData.adid = self.adid;
@@ -98,7 +109,8 @@
 }
 
 - (ADJSessionFailure *)failureResponseData {
-    ADJSessionFailure * failureResponseData = [ADJSessionFailure sessionFailureResponseData];
+    ADJSessionFailure *failureResponseData = [ADJSessionFailure sessionFailureResponseData];
+
     failureResponseData.message = self.message;
     failureResponseData.timeStamp = self.timeStamp;
     failureResponseData.adid = self.adid;
@@ -108,11 +120,14 @@
     return failureResponseData;
 }
 
--(id)copyWithZone:(NSZone *)zone
-{
+- (id)copyWithZone:(NSZone *)zone {
     ADJSessionResponseData* copy = [super copyWithZone:zone];
     return copy;
 }
+
+@end
+
+@implementation ADJSdkClickResponseData
 
 @end
 
@@ -124,7 +139,10 @@
 
 - (id)initWithActivityPackage:(ADJActivityPackage *)activityPackage {
     self = [super init];
-    if (self == nil) return nil;
+    
+    if (self == nil) {
+        return nil;
+    }
 
     self.eventToken = [activityPackage.parameters objectForKey:@"event_token"];
 
@@ -132,7 +150,8 @@
 }
 
 - (ADJEventSuccess *)successResponseData {
-    ADJEventSuccess * successResponseData = [ADJEventSuccess eventSuccessResponseData];
+    ADJEventSuccess *successResponseData = [ADJEventSuccess eventSuccessResponseData];
+
     successResponseData.message = self.message;
     successResponseData.timeStamp = self.timeStamp;
     successResponseData.adid = self.adid;
@@ -143,7 +162,8 @@
 }
 
 - (ADJEventFailure *)failureResponseData {
-    ADJEventFailure * failureResponseData = [ADJEventFailure eventFailureResponseData];
+    ADJEventFailure *failureResponseData = [ADJEventFailure eventFailureResponseData];
+
     failureResponseData.message = self.message;
     failureResponseData.timeStamp = self.timeStamp;
     failureResponseData.adid = self.adid;
@@ -159,12 +179,11 @@
             self.message, self.timeStamp, self.adid, self.eventToken, self.success, self.willRetry, self.attribution, self.jsonResponse];
 }
 
--(id)copyWithZone:(NSZone *)zone
-{
-    ADJEventResponseData* copy = [super copyWithZone:zone];
+- (id)copyWithZone:(NSZone *)zone {
+    ADJEventResponseData *copy = [super copyWithZone:zone];
 
     if (copy) {
-        copy.eventToken   = [self.eventToken copyWithZone:zone];
+        copy.eventToken = [self.eventToken copyWithZone:zone];
     }
 
     return copy;
@@ -176,14 +195,17 @@
 
 - (id)initWithActivityPackage:(ADJActivityPackage *)activityPackage {
     self = [super init];
-    if (self == nil) return nil;
+
+    if (self == nil) {
+        return nil;
+    }
 
     return self;
 }
 
--(id)copyWithZone:(NSZone *)zone
-{
-    ADJAttributionResponseData* copy = [super copyWithZone:zone];
+- (id)copyWithZone:(NSZone *)zone {
+    ADJAttributionResponseData *copy = [super copyWithZone:zone];
+    
     return copy;
 }
 
@@ -192,5 +214,5 @@
             self.message, self.timeStamp, self.adid, self.success, self.willRetry, self.attribution, self.deeplink, self.jsonResponse];
 }
 
-
 @end
+

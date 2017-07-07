@@ -81,13 +81,13 @@ In the dialog `Choose options for adding these files` make sure to check the che
 If you're using [CocoaPods][cocoapods], you can add the following line to your `Podfile` and continue from [this step](#sdk-integrate):
 
 ```ruby
-pod 'Adjust', '~> 4.11.0'
+pod 'Adjust', '~> 4.11.4'
 ```
 
 or:
 
 ```ruby
-pod 'Adjust', :git => 'https://github.com/adjust/ios_sdk.git', :tag => 'v4.11.0'
+pod 'Adjust', :git => 'https://github.com/adjust/ios_sdk.git', :tag => 'v4.11.4'
 ```
 
 --
@@ -346,7 +346,7 @@ You can read more about special partners and these integrations in our [guide to
 
 Some parameters are saved to be sent in every event and session of the adjust SDK. Once you have added any of these parameters, you don't need to add them every time, since they will be saved locally. If you add the same parameter twice, there will be no effect.
 
-These session parameters can be called before the adjust SDK is launched to make sure they are sent even on install. If you need to send them with an install, but can only obtain the needed values after launch, it's possible to [delay](#delay-start) the first launch of the adjust SDK to allow this behaviour.
+If you want to send session parameters with the initial install event, they must be called before the Adjust SDK launches via `[Adjust appDidLaunch:]`. If you need to send them with an install, but can only obtain the needed values after launch, it's possible to [delay](#delay-start) the first launch of the adjust SDK to allow this behavior.
 
 ### <a id="session-callback-parameters"> Session callback parameters
 
@@ -656,7 +656,7 @@ After this has been set up, your app will be opened after you click the adjust t
 - (BOOL)application:(UIApplication *)application continueUserActivity:(NSUserActivity *)userActivity
  restorationHandler:(void (^)(NSArray *restorableObjects))restorationHandler {
     if ([[userActivity activityType] isEqualToString:NSUserActivityTypeBrowsingWeb]) {
-        NSURL url = [userActivity webpageURL];
+        NSURL *url = [userActivity webpageURL];
 
         // url object contains your universal link content
     }
@@ -676,7 +676,7 @@ We provide a helper function that allows you to convert a universal link to an o
 - (BOOL)application:(UIApplication *)application continueUserActivity:(NSUserActivity *)userActivity
  restorationHandler:(void (^)(NSArray *restorableObjects))restorationHandler {
     if ([[userActivity activityType] isEqualToString:NSUserActivityTypeBrowsingWeb]) {
-        NSURL url = [userActivity webpageURL];
+        NSURL *url = [userActivity webpageURL];
 
         NSURL *oldStyleDeeplink = [Adjust convertUniversalLink:url scheme:@"adjustExample"];
     }
@@ -695,7 +695,7 @@ You can register a delegate callback to be notified before a deferred deep link 
 Follow the same steps and implement the following delegate callback function for deferred deep links:
 
 ```objc
-- (void)adjustDeeplinkResponse:(NSURL *)deeplink {
+- (BOOL)adjustDeeplinkResponse:(NSURL *)deeplink {
     // deeplink object contains information about deferred deep link content
 
     // Apply your logic to determine whether the adjust SDK should try to open the deep link
@@ -719,16 +719,12 @@ Once you have received deep link content information in your app, add a call to 
 
 The call to `appWillOpenUrl` should be done like this to support deep linking reattributions in all iOS versions:
 
-``` objc
-- (BOOL)application:(UIApplication *)application continueUserActivity:(NSUserActivity *)userActivity
- restorationHandler:(void (^)(NSArray *restorableObjects))restorationHandler {
-    if ([[userActivity activityType] isEqualToString:NSUserActivityTypeBrowsingWeb]) {
-        NSURL url = [userActivity webpageURL];
-
-        // url object contains your universal link content
-
-        [Adjust appWillOpenUrl:url];
-    }
+```objc
+- (BOOL)application:(UIApplication *)application openURL:(NSURL *)url
+  sourceApplication:(NSString *)sourceApplication annotation:(id)annotation {
+    // url object contains your deep link content
+    
+    [Adjust appWillOpenUrl:url];
 
     // Apply your logic to determine the return value of this method
     return YES;
@@ -972,7 +968,7 @@ If you are seing any value in the dashboard other than what you expected to be t
 
 The adjust SDK is licensed under the MIT License.
 
-Copyright (c) 2012-2016 adjust GmbH,
+Copyright (c) 2012-2017 adjust GmbH,
 http://www.adjust.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
