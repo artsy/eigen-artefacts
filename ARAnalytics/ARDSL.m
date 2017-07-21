@@ -10,7 +10,9 @@ NSString * const ARAnalyticsDetails = @"details";
 NSString * const ARAnalyticsProperties = @"properties";
 NSString * const ARAnalyticsPageName = @"pageName";
 NSString * const ARAnalyticsPageNameKeyPath = @"keypath";
+NSString * const ARAnalyticsPageNameBlock = @"pageNameBlock";
 NSString * const ARAnalyticsEventName = @"event";
+NSString * const ARAnalyticsEventNameBlock = @"eventBlock";
 NSString * const ARAnalyticsSelectorName = @"selector";
 NSString * const ARAnalyticsEventProperties = @"properties";
 NSString * const ARAnalyticsShouldFire = @"shouldFire";
@@ -76,6 +78,26 @@ ARExtractProperties(id object, NSDictionary *analyticsEntry, RACTuple *parameter
     return nil;
 }
 
+static NSString *
+ARExtractPageName(id object, NSDictionary *analyticsEntry, RACTuple *parameters, NSDictionary *extractedProperties)
+{
+    ARAnalyticsNameBlock pageNameBlock = analyticsEntry[ARAnalyticsPageNameBlock];
+    if (pageNameBlock) {
+        return pageNameBlock(object, parameters.allObjects, extractedProperties);
+    }
+    return nil;
+}
+
+static NSString *
+ARExtractEventName(id object, NSDictionary *analyticsEntry, RACTuple *parameters, NSDictionary *extractedProperties)
+{
+    ARAnalyticsNameBlock eventNameBlock = analyticsEntry[ARAnalyticsEventNameBlock];
+    if (eventNameBlock) {
+        return eventNameBlock(object, parameters.allObjects, extractedProperties);
+    }
+    return nil;
+}
+
 + (void)addEventAnalyticsHook:(NSDictionary *)eventDictionary {
     Class klass = eventDictionary[ARAnalyticsClass];
 
@@ -94,7 +116,14 @@ ARExtractProperties(id object, NSDictionary *analyticsEntry, RACTuple *parameter
                 BOOL shouldFire = ar_shouldFireForInstance(object, instance, parameters);
 
                 if (shouldFire) {
-                    [ARAnalytics event:event withProperties:ARExtractProperties(instance, object, parameters)];
+                    NSString *eventName = event;
+                    NSDictionary *properties = ARExtractProperties(instance, object, parameters);
+
+                    if (!eventName) {
+                        // if the event name was not set statically, see if it's available via the block parameter
+                        eventName = ARExtractEventName(instance, object, parameters, properties);
+                    }
+                    [ARAnalytics event:eventName withProperties:properties];
                 }
             }];
         }];
@@ -121,22 +150,29 @@ ARExtractProperties(id object, NSDictionary *analyticsEntry, RACTuple *parameter
             __weak __typeof(instance) weakInstance = instance;
             [[instance rac_signalForSelector:selector] subscribeNext:^(RACTuple *parameters) {
                 id instance = weakInstance;
+                if (instance == nil) {
+                    return;
+                }
 
                 BOOL shouldFire = ar_shouldFireForInstance(object, instance, parameters);
 
                 if (shouldFire) {
                     NSString *pageName;
+                    NSDictionary *properties = ARExtractProperties(instance, object, parameters);
+
                     if (dictionaryPageName) {
                         pageName = dictionaryPageName;
-                    } else {
+                    } else if (pageNameKeypath) {
                         pageName = [instance valueForKeyPath:pageNameKeypath];
                         NSAssert(pageName, @"Value for Key on `%@` returned nil.", pageNameKeypath);
+                    } else {
+                        // if we still don't have a page name, check to see if it is supplied dynamically
+                        pageName = ARExtractPageName(instance, object, parameters, properties);
                     }
 
                     // Because of backwards compatibility we can't currently expect
                     // `-[ARAnalyticsProvider pageView:withProperties:]` to call existing
                     // `-[ARAnalyticsProvider pageView:]` implementations, so call the right one.
-                    NSDictionary *properties = ARExtractProperties(instance, object, parameters);
                     if (properties) {
                         [ARAnalytics pageView:pageName withProperties:properties];
                     } else {

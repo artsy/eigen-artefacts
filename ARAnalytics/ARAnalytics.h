@@ -10,6 +10,8 @@
 @class TSConfig;
 @class ARAnalyticalProvider;
 
+@protocol AdjustDelegate;
+
 /**
  @class
  ARAnalytics Main Class.
@@ -57,6 +59,7 @@
 + (void)setupMixpanelWithToken:(NSString *)token andHost:(NSString *)host;
 + (void)setupFlurryWithAPIKey:(NSString *)key;
 + (void)setupGoogleAnalyticsWithID:(NSString *)identifier;
++ (void)setupFirebaseAnalytics;
 + (void)setupLocalyticsWithAppKey:(NSString *)key;
 + (void)setupKISSMetricsWithAPIKey:(NSString *)key;
 + (void)setupCrittercismWithAppID:(NSString *)appID;
@@ -76,17 +79,20 @@
 + (void)setupSegmentioWithWriteKey:(NSString*)key integrations:(NSArray *)integrations;
 + (void)setupSwrveWithAppID:(NSString *)appID apiKey:(NSString *)apiKey;
 + (void)setupYandexMobileMetricaWithAPIKey:(NSString*)key;
-+ (void)setupAdjustWithAppToken:(NSString *)token;
++ (void)setupAdjustWithAppToken:(NSString *)token andConfigurationDelegate:(id<AdjustDelegate>)delegate;
 + (void)setupBranchWithAPIKey:(NSString *)key;
 + (void)setupSnowplowWithAddress:(NSString *)address;
 + (void)setupSentryWithID:(NSString *)identifier;
 + (void)setupIntercomWithAppID:(NSString *)identifier apiKey:(NSString *)apiKey;
 + (void)setupKeenWithProjectID:(NSString *)projectId andWriteKey:(NSString *)writeKey andReadKey:(NSString *)readKey;
-+ (void)setupAdobeWithData:(NSDictionary *)additionalData;
+
++ (void)setupAdobeWithData:(NSDictionary *)additionalData otherSettings:(NSDictionary *)settings;
 + (void)setupInstallTrackerWithApplicationID:(NSString *)applicationID;
 + (void)setupAppseeWithAPIKey:(NSString *)key;
 + (void)setupMobileAppTrackerWithAdvertiserID:(NSString *)advertiserID conversionKey:(NSString *)conversionKey allowedEvents:(NSArray *)allowedEvents;
 + (void)setupLaunchKitWithAPIToken:(NSString *)token;
++ (void)setupLeanplumWithAppId:(NSString *)appId developmentKey:(NSString *)developmentKey productionKey:(NSString *)productionKey;
++ (void)setupAppboy;
 
 /// Add a provider manually
 + (void)setupProvider:(ARAnalyticalProvider *)provider;
@@ -167,6 +173,7 @@
 
 /// an NSLog-like command that send to providers
 extern void ARLog (NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
+extern void ARLogv (NSString *format, va_list argList) NS_FORMAT_FUNCTION(1,0);
 
 /// A try-catch for nil protection wrapped event
 extern void ARAnalyticsEvent (NSString *event, NSDictionary *properties);
@@ -220,6 +227,7 @@ extern NSString * const ARKeenProjectID;
 extern NSString * const ARKeenWriteKey;
 extern NSString * const ARKeenReadKey;
 extern NSString * const ARAdobeData;
+extern NSString * const ARAdobeSettings;
 extern NSString * const ARInstallTrackerApplicationID;
 extern NSString * const ARAppseeAPIKey;
 extern NSString * const ARMobileAppTrackerAdvertiserID;

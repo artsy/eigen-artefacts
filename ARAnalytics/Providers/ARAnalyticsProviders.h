@@ -19,6 +19,10 @@
 #import "ARAnalytics+GoogleAnalytics.h"
 #endif
 
+#ifdef AR_FIREBASE_EXISTS
+#import "FirebaseProvider.h"
+#endif
+
 #ifdef AR_KISSMETRICS_EXISTS
 #import "KISSmetricsProvider.h"
 #endif
@@ -65,6 +69,14 @@
 
 #ifdef AR_HOCKEYAPPOSX_EXISTS
 #import "HockeyAppOSXProvider.h"
+#endif
+
+#ifdef AR_LEANPLUM_EXISTS
+#import "LeanplumProvider.h"
+#endif
+
+#ifdef AR_APPBOY_EXISTS
+#import "AppboyProvider.h"
 #endif
 
 #ifdef AR_PARSEANALYTICS_EXISTS
