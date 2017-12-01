@@ -11,6 +11,7 @@
 
 @interface RNSentryEventEmitter : RCTEventEmitter <RCTBridgeModule>
 
-+ (void)successfullySentEventWithId:(NSString *)eventId;
++ (void)emitStoredEvent;
++ (void)emitModuleTableUpdate:(NSDictionary *)moduleTable;
 
 @end

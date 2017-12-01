@@ -55,6 +55,9 @@ typedef enum
 
 #pragma mark - Configuration -
 
+/** Init KSCrash instance with custom base path. */
+- (id) initWithBasePath:(NSString *)basePath;
+
 /** A dictionary containing any info you'd like to appear in crash reports. Must
  * contain only JSON-safe data: NSString for keys, and NSDictionary, NSArray,
  * NSString, NSDate, and NSNumber for values.
@@ -166,6 +169,8 @@ typedef enum
 /** Which languages to demangle when getting stack traces (default KSCrashDemangleLanguageAll) */
 @property(nonatomic,readwrite,assign) KSCrashDemangleLanguage demangleLanguages;
 
+/** Exposes the uncaughtExceptionHandler if set from KSCrash. Is nil if debugger is running. **/
+@property (nonatomic, assign) NSUncaughtExceptionHandler *uncaughtExceptionHandler;
 
 #pragma mark - Information -
 

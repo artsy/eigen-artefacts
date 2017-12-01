@@ -837,7 +837,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
 {
   RCTAssertJSThread();
   [_javaScriptExecutor executeAsyncBlockOnJavaScriptQueue:^{
-    [self _actuallyInvokeAndProcessModule:@"JSTimersExecution"
+    [self _actuallyInvokeAndProcessModule:@"JSTimers"
                                    method:@"callTimers"
                                 arguments:@[@[timer]]];
   }];
@@ -920,6 +920,10 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
 - (void)handleBuffer:(id)buffer batchEnded:(BOOL)batchEnded
 {
   RCTAssertJSThread();
+
+  if (!self.valid) {
+    return;
+  }
 
   if (buffer != nil && buffer != (id)kCFNull) {
     _wasBatchActive = YES;
@@ -1067,7 +1071,7 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithBundleURL:(__unused NSURL *)bundleUR
     }
 
     NSString *message = [NSString stringWithFormat:
-                         @"Exception '%@' was thrown while invoking %@ on target %@ with params %@",
+                         @"Exception '%@' was thrown while invoking %s on target %@ with params %@",
                          exception, method.JSMethodName, moduleData.name, params];
     RCTFatal(RCTErrorWithMessage(message));
     return nil;

@@ -9,17 +9,27 @@
 #import "RNSentryEventEmitter.h"
 
 NSString *const kEventSentSuccessfully = @"Sentry/eventSentSuccessfully";
+NSString *const kEventStored = @"Sentry/eventStored";
+NSString *const kModuleTable = @"Sentry/moduleTable";
 
 @implementation RNSentryEventEmitter
 
 RCT_EXPORT_MODULE();
 
 - (NSDictionary<NSString *, NSString *> *)constantsToExport {
-    return @{ @"EVENT_SENT_SUCCESSFULLY": kEventSentSuccessfully};
+    return @{
+             @"EVENT_SENT_SUCCESSFULLY": kEventSentSuccessfully,
+             @"EVENT_STORED": kEventStored,
+             @"MODULE_TABLE": kModuleTable
+             };
+}
+
++ (BOOL)requiresMainQueueSetup {
+    return YES;
 }
 
 - (NSArray<NSString *> *)supportedEvents {
-    return @[@"Sentry/eventSentSuccessfully"];
+    return @[kEventSentSuccessfully, kEventStored, kModuleTable];
 }
 
 
@@ -36,13 +46,26 @@ RCT_EXPORT_MODULE();
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
-+ (void)successfullySentEventWithId:(NSString *)eventId {
-    [self postNotificationName:kEventSentSuccessfully withPayload:eventId];
++ (void)emitStoredEvent {
+    [self postNotificationName:kEventStored withPayload:@""];
+}
+
++ (void)emitModuleTableUpdate:(NSDictionary *)moduleTable {
+    if (![NSJSONSerialization isValidJSONObject:moduleTable]) {
+        return;
+    }
+    NSError *error = nil;
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:moduleTable
+                                                       options:0
+                                                         error:&error];
+    if (nil == error) {
+        [self postNotificationName:kModuleTable withPayload:[[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding]];
+    }
 }
 
 + (void)postNotificationName:(NSString *)name withPayload:(NSObject *)object {
     NSDictionary<NSString *, id> *payload = @{@"payload": object};
-    
+
     [[NSNotificationCenter defaultCenter] postNotificationName:name
                                                         object:self
                                                       userInfo:payload];

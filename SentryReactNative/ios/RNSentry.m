@@ -9,17 +9,25 @@
 #import <KSCrash/KSCrash.h>
 #import <Sentry/Sentry.h>
 
+NSString *const RNSentryVersionString = @"0.30.2";
+NSString *const RNSentrySdkName = @"sentry-react-native";
+
 @interface RNSentry()
 
-@property (nonatomic, strong) NSDictionary *lastReceivedException;
+@property (nonatomic, strong) NSMutableDictionary *moduleMapping;
 
 @end
+
 
 @implementation RNSentry
 
 - (dispatch_queue_t)methodQueue
 {
-    return dispatch_queue_create("io.sentry.RNSentry", DISPATCH_QUEUE_SERIAL);
+    return dispatch_get_main_queue();
+}
+
++ (BOOL)requiresMainQueueSetup {
+    return YES;
 }
 
 + (void)installWithBridge:(RCTBridge *)bridge {
@@ -30,68 +38,16 @@
     // For now we don't need this anymore
 }
 
-+ (NSNumberFormatter *)numberFormatter {
-    static dispatch_once_t onceToken;
-    static NSNumberFormatter *formatter = nil;
-    dispatch_once(&onceToken, ^{
-        formatter = [NSNumberFormatter new];
-        formatter.numberStyle = NSNumberFormatterNoStyle;
-    });
-    return formatter;
-}
-
-+ (NSRegularExpression *)frameRegex {
-    static dispatch_once_t onceTokenRegex;
-    static NSRegularExpression *regex = nil;
-    dispatch_once(&onceTokenRegex, ^{
-        //        NSString *pattern = @"at (.+?) \\((?:(.+?):([0-9]+?):([0-9]+?))\\)"; // Regex with debugger
-        NSString *pattern = @"(?:([^@]+)@(.+?):([0-9]+?):([0-9]+))"; // Regex without debugger
-        regex = [NSRegularExpression regularExpressionWithPattern:pattern options:0 error:nil];
-    });
-    return regex;
-}
-
-NSArray *SentryParseJavaScriptStacktrace(NSString *stacktrace) {
-    NSNumberFormatter *formatter = [RNSentry numberFormatter];
-    NSArray *lines = [stacktrace componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
-    NSMutableArray *frames = [NSMutableArray array];
-    for (NSString *line in lines) {
-        NSRange searchedRange = NSMakeRange(0, [line length]);
-        NSArray *matches = [[RNSentry frameRegex] matchesInString:line options:0 range:searchedRange];
-        for (NSTextCheckingResult *match in matches) {
-            [frames addObject:@{
-                                @"methodName": [line substringWithRange:[match rangeAtIndex:1]],
-                                @"column": [formatter numberFromString:[line substringWithRange:[match rangeAtIndex:4]]],
-                                @"lineNumber": [formatter numberFromString:[line substringWithRange:[match rangeAtIndex:3]]],
-                                @"file": [line substringWithRange:[match rangeAtIndex:2]]
-                                }];
-        }
-    }
-    return frames;
-}
-
-NSArray *SentryParseRavenFrames(NSArray *ravenFrames) {
-    NSNumberFormatter *formatter = [RNSentry numberFormatter];
-    NSMutableArray *frames = [NSMutableArray array];
-    for (NSDictionary *ravenFrame in ravenFrames) {
-        if (ravenFrame[@"lineno"] != NSNull.null) {
-            [frames addObject:@{
-                                @"methodName": ravenFrame[@"function"],
-                                @"column": [formatter numberFromString:[NSString stringWithFormat:@"%@", ravenFrame[@"colno"]]],
-                                @"lineNumber": [formatter numberFromString:[NSString stringWithFormat:@"%@", ravenFrame[@"lineno"]]],
-                                @"file": ravenFrame[@"filename"]
-                                }];
-        }
-    }
-    return frames;
-}
-
 - (NSInteger)indexOfReactNativeCallFrame:(NSArray<SentryFrame *> *)frames nativeCallAddress:(NSUInteger)nativeCallAddress {
     NSInteger smallestDiff = NSIntegerMax;
     NSInteger index = -1;
     NSUInteger counter = 0;
     for (SentryFrame *frame in frames) {
         NSUInteger instructionAddress;
+        // We skip js frames because they don't have an instructionAddress
+        if (frame.instructionAddress == nil) {
+            continue;
+        }
         [[NSScanner scannerWithString:frame.instructionAddress] scanHexLongLong:&instructionAddress];
         if (instructionAddress < nativeCallAddress) {
             continue;
@@ -109,33 +65,13 @@ NSArray *SentryParseRavenFrames(NSArray *ravenFrames) {
     return index;
 }
 
-- (NSArray<SentryFrame *> *)convertReactNativeStacktrace:(NSArray *)stacktrace {
-    NSMutableArray<SentryFrame *> *frames = [NSMutableArray new];
-    for (NSDictionary *frame in stacktrace) {
-        if (nil == frame[@"methodName"]) {
-            continue;
-        }
-        NSString *simpleFilename = [[[frame[@"file"] lastPathComponent] componentsSeparatedByString:@"?"] firstObject];
-        SentryFrame *sentryFrame = [[SentryFrame alloc] init];
-        sentryFrame.fileName = [NSString stringWithFormat:@"app:///%@", simpleFilename];
-        sentryFrame.function = frame[@"methodName"];
-        sentryFrame.lineNumber = frame[@"lineNumber"];
-        sentryFrame.columnNumber = frame[@"column"];
-        sentryFrame.platform = @"javascript";
-        [frames addObject:sentryFrame];
-    }
-    return [frames reverseObjectEnumerator].allObjects;
-}
-
 - (void)injectReactNativeFrames:(SentryEvent *)event {
-    NSString *address = event.extra[@"__sentry_address"];
-    SentryThread *crashedThread = nil;
-    for (SentryThread *thread in event.threads) {
-        if ([thread.crashed boolValue]) {
-            crashedThread = thread;
-            break;
-        }
+    NSString *address = [[NSUserDefaults standardUserDefaults] objectForKey:@"RNSentry.__sentry_address"];
+    if (nil == address) {
+        // We bail out here since __sentry_address is not set
+        return;
     }
+    SentryThread *crashedThread = [event.exceptions objectAtIndex:0].thread;
     NSArray<SentryFrame *> *frames = crashedThread.stacktrace.frames;
     NSInteger indexOfReactFrames = [self indexOfReactNativeCallFrame:frames
                                                    nativeCallAddress:[address integerValue]];
@@ -145,7 +81,8 @@ NSArray *SentryParseRavenFrames(NSArray *ravenFrames) {
 
     NSMutableArray<SentryFrame *> *finalFrames = [NSMutableArray new];
 
-    NSArray<SentryFrame *> *reactFrames = [self convertReactNativeStacktrace:SentryParseJavaScriptStacktrace(event.extra[@"__sentry_stack"])];
+    NSString *stacktrace = [[NSUserDefaults standardUserDefaults] objectForKey:@"RNSentry.__sentry_stack"];
+    NSArray<SentryFrame *> *reactFrames = [SentryJavaScriptBridgeHelper convertReactNativeStacktrace:[SentryJavaScriptBridgeHelper parseJavaScriptStacktrace:stacktrace]];
     for (NSInteger i = 0; i < frames.count; i++) {
         [finalFrames addObject:[frames objectAtIndex:i]];
         if (i == indexOfReactFrames) {
@@ -167,9 +104,9 @@ NSArray *SentryParseRavenFrames(NSArray *ravenFrames) {
     if (event.extra[@"__sentry_dist"]) {
         event.dist = [NSString stringWithFormat:@"%@", event.extra[@"__sentry_dist"]];
     }
-    NSMutableDictionary *prevExtra = SentryClient.sharedClient.extra.mutableCopy;
-    [prevExtra setValue:@[@"react-native"] forKey:@"__sentry_sdk_integrations"];
-    SentryClient.sharedClient.extra = prevExtra;
+    event.sdk = @{@"name": RNSentrySdkName,
+                  @"version": RNSentryVersionString,
+                  @"integrations": @[@"sentry-cocoa"]};
 }
 
 RCT_EXPORT_MODULE()
@@ -179,18 +116,18 @@ RCT_EXPORT_MODULE()
     return @{@"nativeClientAvailable": @YES};
 }
 
-RCT_EXPORT_METHOD(startWithDsnString:(NSString * _Nonnull)dsnString)
+RCT_EXPORT_METHOD(startWithDsnString:(NSString * _Nonnull)dsnString options:(NSDictionary *_Nonnull)options)
 {
     static dispatch_once_t onceStartToken;
     dispatch_once(&onceStartToken, ^{
         NSError *error = nil;
+        self.moduleMapping = [[NSMutableDictionary alloc] init];
         SentryClient *client = [[SentryClient alloc] initWithDsn:dsnString didFailWithError:&error];
-        [SentryClient setSharedClient:client];
-        [SentryClient.sharedClient startCrashHandlerWithError:&error];
-        if (error) {
-            [NSException raise:@"SentryReactNative" format:@"%@", error.localizedDescription];
-        }
-        SentryClient.sharedClient.shouldSendEvent = ^BOOL(SentryEvent * _Nonnull event) {
+        client.beforeSerializeEvent = ^(SentryEvent * _Nonnull event) {
+            [self injectReactNativeFrames:event];
+            [self setReleaseVersionDist:event];
+        };
+        client.shouldSendEvent = ^BOOL(SentryEvent * _Nonnull event) {
             // We don't want to send an event after startup that came from a NSException of react native
             // Because we sent it already before the app crashed.
             if (nil != event.exceptions.firstObject.type &&
@@ -198,12 +135,17 @@ RCT_EXPORT_METHOD(startWithDsnString:(NSString * _Nonnull)dsnString)
                 NSLog(@"RCTFatalException");
                 return NO;
             }
+            // Since we set shouldSendEvent for react-native we need to duplicate the code for sampling here
+            if (nil != options[@"sampleRate"]) {
+                return ([options[@"sampleRate"] floatValue] >= ((double)arc4random() / 0x100000000));
+            }
             return YES;
         };
-        SentryClient.sharedClient.beforeSerializeEvent = ^(SentryEvent * _Nonnull event) {
-            [self injectReactNativeFrames:event];
-            [self setReleaseVersionDist:event];
-        };
+        [SentryClient setSharedClient:client];
+        [SentryClient.sharedClient startCrashHandlerWithError:&error];
+        if (error) {
+            [NSException raise:@"SentryReactNative" format:@"%@", error.localizedDescription];
+        }
     });
 }
 
@@ -223,7 +165,7 @@ RCT_EXPORT_METHOD(activateStacktraceMerging:(RCTPromiseResolveBlock)resolve
     static const void *key = &key;
     SEL selector = @selector(invokeWithBridge:module:arguments:);
     uintptr_t callNativeModuleAddress = [class instanceMethodForSelector:selector];
-
+    __block RNSentry *_self = self;
     SentrySwizzleInstanceMethod(class,
                                 selector,
                                 SentrySWReturnType(id),
@@ -234,12 +176,11 @@ RCT_EXPORT_METHOD(activateStacktraceMerging:(RCTPromiseResolveBlock)resolve
         if (arguments != nil && arguments.count > 0) {
             for (id param in arguments) {
                 if ([param isKindOfClass:NSDictionary.class] && param[@"__sentry_stack"]) {
-                    @synchronized (SentryClient.sharedClient) {
-                        NSMutableDictionary *prevExtra = SentryClient.sharedClient.extra.mutableCopy;
-                        [prevExtra setValue:[NSNumber numberWithUnsignedInteger:callNativeModuleAddress] forKey:@"__sentry_address"];
-                        [prevExtra setValue:[RCTConvert NSString:param[@"__sentry_stack"]] forKey:@"__sentry_stack"];
-                        SentryClient.sharedClient.extra = prevExtra;
-                    }
+                    [_self.moduleMapping setValue:[NSString stringWithFormat:@"%@", [module class]] forKey:[NSString stringWithFormat:@"%@", param[@"__sentry_moduleID"]]];
+                    [RNSentryEventEmitter emitModuleTableUpdate:_self.moduleMapping.mutableCopy];
+                    [[NSUserDefaults standardUserDefaults] setObject:[NSString stringWithFormat:@"%lu", callNativeModuleAddress] forKey:@"RNSentry.__sentry_address"];
+                    [[NSUserDefaults standardUserDefaults] setObject:[RCTConvert NSString:param[@"__sentry_stack"]] forKey:@"RNSentry.__sentry_stack"];
+                    [[NSUserDefaults standardUserDefaults] synchronize];
                 } else {
                     if (param != nil) {
                         [newParams addObject:param];
@@ -266,12 +207,9 @@ RCT_EXPORT_METHOD(activateStacktraceMerging:(RCTPromiseResolveBlock)resolve
         if (params != nil && params.count > 0) {
             for (id param in params) {
                 if ([param isKindOfClass:NSDictionary.class] && param[@"__sentry_stack"]) {
-                    @synchronized (SentryClient.sharedClient) {
-                        NSMutableDictionary *prevExtra = SentryClient.sharedClient.extra.mutableCopy;
-                        [prevExtra setValue:[NSNumber numberWithUnsignedInteger:callNativeModuleAddress] forKey:@"__sentry_address"];
-                        [prevExtra setValue:[RCTConvert NSString:param[@"__sentry_stack"]] forKey:@"__sentry_stack"];
-                        SentryClient.sharedClient.extra = prevExtra;
-                    }
+                    [[NSUserDefaults standardUserDefaults] setObject:[NSNumber numberWithUnsignedInteger:callNativeModuleAddress] forKey:@"RNSentry.__sentry_address"];
+                    [[NSUserDefaults standardUserDefaults] setObject:[RCTConvert NSString:param[@"__sentry_stack"]] forKey:@"RNSentry.__sentry_stack"];
+                    [[NSUserDefaults standardUserDefaults] synchronize];
                 } else {
                     if (param != nil) {
                         [newParams addObject:param];
@@ -285,17 +223,19 @@ RCT_EXPORT_METHOD(activateStacktraceMerging:(RCTPromiseResolveBlock)resolve
 
 RCT_EXPORT_METHOD(clearContext)
 {
-    [SentryClient.sharedClient clearContext];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0ul), ^{
+        [SentryClient.sharedClient clearContext];
+    });
 }
 
 RCT_EXPORT_METHOD(setLogLevel:(int)level)
 {
-    [SentryClient setLogLevel:[self sentryLogLevelFromLevel:level]];
+    [SentryClient setLogLevel:[SentryJavaScriptBridgeHelper sentryLogLevelFromJavaScriptLevel:level]];
 }
 
 RCT_EXPORT_METHOD(setTags:(NSDictionary *_Nonnull)tags)
 {
-    SentryClient.sharedClient.tags = [self sanitizeDictionary:tags];
+    SentryClient.sharedClient.tags = [SentryJavaScriptBridgeHelper sanitizeDictionary:tags];
 }
 
 RCT_EXPORT_METHOD(setExtra:(NSDictionary *_Nonnull)extra)
@@ -312,103 +252,42 @@ RCT_EXPORT_METHOD(addExtra:(NSString *_Nonnull)key value:(id)value)
 
 RCT_EXPORT_METHOD(setUser:(NSDictionary *_Nonnull)user)
 {
-    SentryUser *sentryUser = [[SentryUser alloc] initWithUserId:[RCTConvert NSString:user[@"userID"]]];
-    sentryUser.email = [RCTConvert NSString:user[@"email"]];
-    sentryUser.username = [RCTConvert NSString:user[@"username"]];
-    sentryUser.extra = [RCTConvert NSDictionary:user[@"extra"]];
-    SentryClient.sharedClient.user = sentryUser;
+    SentryUser *sentryUser = [SentryJavaScriptBridgeHelper createSentryUserFromJavaScriptUser:user];
+    if (sentryUser) {
+        SentryClient.sharedClient.user = sentryUser;
+    }
 }
 
 RCT_EXPORT_METHOD(captureBreadcrumb:(NSDictionary * _Nonnull)breadcrumb)
 {
-    SentryBreadcrumb *crumb = [[SentryBreadcrumb alloc] initWithLevel:[self sentrySeverityFromLevel:breadcrumb[@"level"]]
-                                                             category:breadcrumb[@"category"]];
-    crumb.message = breadcrumb[@"message"];
-    crumb.timestamp = [NSDate dateWithTimeIntervalSince1970:[breadcrumb[@"timestamp"] integerValue]];
-    crumb.type = breadcrumb[@"type"];
-    crumb.data = [RCTConvert NSDictionary:breadcrumb[@"data"]];
-    [SentryClient.sharedClient.breadcrumbs addBreadcrumb:crumb];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0ul), ^{
+        [SentryClient.sharedClient.breadcrumbs addBreadcrumb:[SentryJavaScriptBridgeHelper createSentryBreadcrumbFromJavaScriptBreadcrumb:breadcrumb]];
+    });
 }
 
 RCT_EXPORT_METHOD(captureEvent:(NSDictionary * _Nonnull)event)
 {
-    SentrySeverity level = [self sentrySeverityFromLevel:event[@"level"]];
-
-    SentryUser *user = nil;
-    if (event[@"user"] != nil) {
-        user = [[SentryUser alloc] initWithUserId:[NSString stringWithFormat:@"%@", event[@"user"][@"userID"]]];
-        user.email = [NSString stringWithFormat:@"%@", event[@"user"][@"email"]];
-        user.username = [NSString stringWithFormat:@"%@", event[@"user"][@"username"]];
-        user.extra = [RCTConvert NSDictionary:event[@"user"][@"extra"]];
-    }
-
-    SentryEvent *sentryEvent = [[SentryEvent alloc] initWithLevel:level];
-    sentryEvent.eventId = event[@"event_id"];
-    sentryEvent.message = event[@"message"];
-    sentryEvent.logger = event[@"logger"];
-    sentryEvent.tags = [self sanitizeDictionary:event[@"tags"]];
-    sentryEvent.extra = event[@"extra"];
-    sentryEvent.user = user;
-    if (event[@"exception"]) {
-        NSDictionary *exception = event[@"exception"][@"values"][0];
-        NSMutableArray *frames = [NSMutableArray array];
-        NSArray<SentryFrame *> *stacktrace = [self convertReactNativeStacktrace:SentryParseRavenFrames(exception[@"stacktrace"][@"frames"])];
-        for (NSInteger i = (stacktrace.count-1); i > 0; i--) {
-            [frames addObject:[stacktrace objectAtIndex:i]];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0ul), ^{
+        SentryEvent *sentryEvent = [SentryJavaScriptBridgeHelper createSentryEventFromJavaScriptEvent:event];
+        if (sentryEvent.exceptions) {
+#if DEBUG
+            // We want to send the exception instead of storing it because in debug
+            // the app does not crash it will restart
+            [SentryClient.sharedClient sendEvent:sentryEvent withCompletionHandler:NULL];
+#else
+            [SentryClient.sharedClient storeEvent:sentryEvent];
+#endif
+        } else {
+            [SentryClient.sharedClient sendEvent:sentryEvent withCompletionHandler:NULL];
         }
-        [self addExceptionToEvent:sentryEvent type:exception[@"type"] value:exception[@"value"] frames:frames];
-    }
-    [SentryClient.sharedClient sendEvent:sentryEvent withCompletionHandler:NULL];
+        [RNSentryEventEmitter emitStoredEvent];
+    });
 }
 
-- (void)addExceptionToEvent:(SentryEvent *)event type:(NSString *)type value:(NSString *)value frames:(NSArray *)frames {
-    SentryException *sentryException = [[SentryException alloc] initWithValue:value type:type];
-    SentryThread *thread = [[SentryThread alloc] initWithThreadId:@(99)];
-    thread.crashed = @(YES);
-    thread.stacktrace = [[SentryStacktrace alloc] initWithFrames:frames registers:@{}];
-    sentryException.thread = thread;
-    event.exceptions = @[sentryException];
-}
 
 RCT_EXPORT_METHOD(crash)
 {
     [SentryClient.sharedClient crash];
-}
-
-- (SentrySeverity)sentrySeverityFromLevel:(NSString *)level {
-    if ([level isEqualToString:@"fatal"]) {
-        return kSentrySeverityFatal;
-    } else if ([level isEqualToString:@"warning"]) {
-        return kSentrySeverityWarning;
-    } else if ([level isEqualToString:@"info"]) {
-        return kSentrySeverityInfo;
-    } else if ([level isEqualToString:@"debug"]) {
-        return kSentrySeverityDebug;
-    } else if ([level isEqualToString:@"error"]) {
-        return kSentrySeverityError;
-    }
-    return kSentrySeverityFatal;
-}
-
-- (SentryLogLevel)sentryLogLevelFromLevel:(int)level {
-    switch (level) {
-        case 1:
-            return kSentryLogLevelError;
-        case 2:
-            return kSentryLogLevelDebug;
-        case 3:
-            return kSentryLogLevelVerbose;
-        default:
-            return kSentryLogLevelNone;
-    }
-}
-
-- (NSDictionary *)sanitizeDictionary:(NSDictionary *)dictionary {
-    NSMutableDictionary *dict = [NSMutableDictionary dictionary];
-    for (NSString *key in dictionary.allKeys) {
-        [dict setObject:[NSString stringWithFormat:@"%@", [dictionary objectForKey:key]] forKey:key];
-    }
-    return [NSDictionary dictionaryWithDictionary:dict];
 }
 
 @end
