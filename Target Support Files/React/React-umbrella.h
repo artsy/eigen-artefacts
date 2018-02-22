@@ -169,6 +169,7 @@
 #import "RCTImageViewManager.h"
 #import "RCTLocalAssetImageLoader.h"
 #import "RCTResizeMode.h"
+#import "RCTLinkingManager.h"
 #import "RCTDataRequestHandler.h"
 #import "RCTFileRequestHandler.h"
 #import "RCTHTTPRequestHandler.h"

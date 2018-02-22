@@ -10,6 +10,7 @@
 #endif
 #endif
 
+#import "ARCocoaConstantsModule.h"
 #import "AREmission.h"
 #import "AREventsModule.h"
 #import "ARSwitchBoardModule.h"

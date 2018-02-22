@@ -1,6 +1,0 @@
-framework module AppHub {
-  umbrella header "AppHub-umbrella.h"
-
-  export *
-  module * { export * }
-}
