@@ -1,0 +1,1 @@
+../../../../React/Libraries/NativeAnimation/Drivers/RCTEventAnimation.h

@@ -1,0 +1,6 @@
+module Interstellar [system] {
+  umbrella header "Interstellar-umbrella.h"
+
+  export *
+  module * { export * }
+}

@@ -1,0 +1,1 @@
+../../../../Emission/Pod/Classes/EigenCommunications/ARTakeCameraPhotoModule.h

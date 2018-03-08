@@ -1,0 +1,1 @@
+../../../React/Libraries/CameraRoll/RCTImagePickerManager.h
