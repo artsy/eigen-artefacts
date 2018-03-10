@@ -1,7 +1,7 @@
 #import "QuickSpec.h"
 #import "QuickConfiguration.h"
 #import "World.h"
-#import <Quick/Quick-Swift.h>
+#import "Quick-Swift.h"
 
 static QuickSpec *currentSpec = nil;
 
