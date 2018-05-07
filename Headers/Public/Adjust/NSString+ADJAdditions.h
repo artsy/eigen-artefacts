@@ -1,0 +1,1 @@
+../../../Adjust/Adjust/ADJAdditions/NSString+ADJAdditions.h

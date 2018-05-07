@@ -1,4 +1,4 @@
-framework module Pods_Artsy {
+module Pods_Artsy [system] {
   umbrella header "Pods-Artsy-umbrella.h"
 
   export *

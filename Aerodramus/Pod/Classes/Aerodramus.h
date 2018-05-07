@@ -1,4 +1,4 @@
-@import Foundation;
+#import <Foundation/Foundation.h>
 
 #if __has_feature(objc_generics)
 #define NSArrayOf(x) NSArray<x>

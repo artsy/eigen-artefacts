@@ -2,7 +2,7 @@ PODS:
   - Adjust (4.12.1):
     - Adjust/Core (= 4.12.1)
   - Adjust/Core (4.12.1)
-  - Aerodramus (0.3.1):
+  - Aerodramus (0.3.2):
     - ISO8601DateFormatter
   - AFNetworkActivityLogger (2.0.4):
     - AFNetworking/NSURLConnection (~> 2.0)
@@ -48,21 +48,21 @@ PODS:
   - ARGenericTableViewController (1.0.2)
   - ARTiledImageView (1.2.0):
     - SDWebImage/Core
-  - Artsy+UIColors (3.1.0)
-  - Artsy+UIFonts (3.1.3)
-  - Artsy+UILabels (2.2.0):
-    - Artsy+UIColors (~> 3.0)
-    - Artsy+UIFonts
+  - "Artsy+UIColors (3.1.0)"
+  - "Artsy+UIFonts (3.2.0)"
+  - "Artsy+UILabels (2.2.0)":
+    - "Artsy+UIColors (~> 3.0)"
+    - "Artsy+UIFonts"
   - Artsy-UIButtons (2.1.0):
-    - Artsy+UIColors (~> 3.0)
-    - Artsy+UIFonts
-    - UIView+BooleanAnimations
-  - Bolts (1.7.0):
-    - Bolts/AppLinks (= 1.7.0)
-    - Bolts/Tasks (= 1.7.0)
-  - Bolts/AppLinks (1.7.0):
+    - "Artsy+UIColors (~> 3.0)"
+    - "Artsy+UIFonts"
+    - "UIView+BooleanAnimations"
+  - Bolts (1.9.0):
+    - Bolts/AppLinks (= 1.9.0)
+    - Bolts/Tasks (= 1.9.0)
+  - Bolts/AppLinks (1.9.0):
     - Bolts/Tasks
-  - Bolts/Tasks (1.7.0)
+  - Bolts/Tasks (1.9.0)
   - CocoaLumberjack (2.0.1):
     - CocoaLumberjack/Default (= 2.0.1)
     - CocoaLumberjack/Extensions (= 2.0.1)
@@ -73,9 +73,9 @@ PODS:
     - CocoaLumberjack/Default
   - DHCShakeNotifier (0.2.0)
   - EDColor (1.0.0)
-  - Emission (1.4.6):
-    - Artsy+UIColors
-    - Artsy+UIFonts (>= 3.0.0)
+  - Emission (1.4.8):
+    - "Artsy+UIColors"
+    - "Artsy+UIFonts (>= 3.0.0)"
     - Extraction (>= 1.2.1)
     - React/BatchedBridge (= 0.48.4)
     - React/Core (= 0.48.4)
@@ -89,7 +89,7 @@ PODS:
     - SentryReactNative (= 0.30.3)
     - Yoga (= 0.48.4.React)
   - Expecta (1.0.5)
-  - Expecta+Snapshots (3.0.0):
+  - "Expecta+Snapshots (3.0.0)":
     - Expecta (~> 1.0)
     - FBSnapshotTestCase/Core (~> 2.0)
     - Specta (~> 1.0)
@@ -98,27 +98,27 @@ PODS:
     - Extraction/ARLoadFailureView (= 1.2.3)
     - Extraction/ARSpinner (= 1.2.3)
     - Extraction/ARSwitchView (= 1.2.3)
-    - Extraction/UILabel+Typography (= 1.2.3)
-    - Extraction/UIView+ARSpinner (= 1.2.3)
+    - "Extraction/UILabel+Typography (= 1.2.3)"
+    - "Extraction/UIView+ARSpinner (= 1.2.3)"
   - Extraction/ARAnimationContinuation (1.2.3)
   - Extraction/ARLoadFailureView (1.2.3):
     - Artsy-UIButtons
-    - Extraction/UILabel+Typography
+    - "Extraction/UILabel+Typography"
     - ORStackView (< 3)
   - Extraction/ARSpinner (1.2.3):
-    - Extraction/UIView+ARSpinner
-    - UIView+BooleanAnimations
+    - "Extraction/UIView+ARSpinner"
+    - "UIView+BooleanAnimations"
   - Extraction/ARSwitchView (1.2.3):
-    - Artsy+UIColors
-    - Artsy+UIFonts (>= 1.1.0)
+    - "Artsy+UIColors"
+    - "Artsy+UIFonts (>= 1.1.0)"
     - FLKAutoLayout
-    - UIView+BooleanAnimations
-  - Extraction/UILabel+Typography (1.2.3)
-  - Extraction/UIView+ARSpinner (1.2.3):
+    - "UIView+BooleanAnimations"
+  - "Extraction/UILabel+Typography (1.2.3)"
+  - "Extraction/UIView+ARSpinner (1.2.3)":
     - Extraction/ARAnimationContinuation
-  - FBSDKCoreKit (4.10.1):
-    - Bolts (~> 1.5)
-  - FBSDKLoginKit (4.10.1):
+  - FBSDKCoreKit (4.31.0):
+    - Bolts (~> 1.7)
+  - FBSDKLoginKit (4.31.0):
     - FBSDKCoreKit
   - FBSnapshotTestCase (2.1.4):
     - FBSnapshotTestCase/SwiftSupport (= 2.1.4)
@@ -220,13 +220,13 @@ PODS:
     - Sentry/KSCrash (~> 3.9.0)
   - Specta (1.0.5)
   - SSFadingScrollView (1.1.0)
-  - Starscream (2.0.4)
-  - SwiftyJSON (3.1.4)
-  - Then (2.1.0)
+  - Starscream (3.0.4)
+  - SwiftyJSON (4.0.0)
+  - Then (2.3.0)
   - UICKeyChainStore (1.0.5)
-  - UIView+BooleanAnimations (1.0.2)
+  - "UIView+BooleanAnimations (1.0.2)"
   - VCRURLConnection (0.2.0)
-  - XCTest+OHHTTPStubSuiteCleanUp (1.0.0):
+  - "XCTest+OHHTTPStubSuiteCleanUp (1.0.0)":
     - OHHTTPStubs
   - Yoga (0.48.4.React)
 
@@ -243,16 +243,16 @@ DEPENDENCIES:
   - ARCollectionViewMasonryLayout (from `https://github.com/ashfurrow/ARCollectionViewMasonryLayout`)
   - ARGenericTableViewController (from `https://github.com/orta/ARGenericTableViewController.git`)
   - ARTiledImageView (from `https://github.com/dblock/ARTiledImageView`)
-  - Artsy+UIColors
-  - Artsy+UIFonts
-  - Artsy+UILabels
+  - "Artsy+UIColors"
+  - "Artsy+UIFonts"
+  - "Artsy+UILabels"
   - Artsy-UIButtons
   - CocoaLumberjack (from `https://github.com/CocoaLumberjack/CocoaLumberjack.git`)
   - DHCShakeNotifier
   - EDColor
   - Emission (~> 1.4.6)
   - Expecta
-  - Expecta+Snapshots
+  - "Expecta+Snapshots"
   - Extraction
   - FBSDKCoreKit (~> 4.9)
   - FBSDKLoginKit (~> 4.9)
@@ -293,9 +293,68 @@ DEPENDENCIES:
   - SwiftyJSON
   - Then
   - UICKeyChainStore
-  - UIView+BooleanAnimations
+  - "UIView+BooleanAnimations"
   - VCRURLConnection
-  - XCTest+OHHTTPStubSuiteCleanUp
+  - "XCTest+OHHTTPStubSuiteCleanUp"
+
+SPEC REPOS:
+  https://github.com/artsy/Specs.git:
+    - Aerodramus
+    - "Artsy+UIColors"
+    - "Artsy+UIFonts"
+    - "Artsy+UILabels"
+    - Artsy-UIButtons
+    - Emission
+    - Extraction
+    - React
+    - SentryReactNative
+    - Yoga
+  https://github.com/CocoaPods/Specs.git:
+    - Adjust
+    - AFNetworkActivityLogger
+    - AFNetworking
+    - Analytics
+    - ARAnalytics
+    - Bolts
+    - DHCShakeNotifier
+    - EDColor
+    - Expecta
+    - "Expecta+Snapshots"
+    - FBSDKCoreKit
+    - FBSDKLoginKit
+    - FBSnapshotTestCase
+    - Forgeries
+    - FXBlurView
+    - iRate
+    - JSDecoupledAppDelegate
+    - JWTDecode
+    - KSCrash
+    - KSDeferred
+    - Mantle
+    - MARKRangeSlider
+    - MMMarkdown
+    - MultiDelegate
+    - Nimble
+    - Nimble-Snapshots
+    - NPKeyboardLayoutGuide
+    - ObjectiveSugar
+    - OCMock
+    - OHHTTPStubs
+    - ORKeyboardReactingApplication
+    - ORStackView
+    - Quick
+    - ReactiveCocoa
+    - RSSwizzle
+    - SDWebImage
+    - Sentry
+    - Specta
+    - Starscream
+    - SwiftyJSON
+    - Then
+    - UICKeyChainStore
+    - "UIView+BooleanAnimations"
+    - VCRURLConnection
+    - "XCTest+OHHTTPStubSuiteCleanUp"
 
 EXTERNAL SOURCES:
   AFOAuth1Client:
@@ -352,7 +411,7 @@ CHECKOUT OPTIONS:
     :commit: 551ca733c29bd35dddb651d9661c8839de4e7985
     :git: https://github.com/bitstadium/HockeySDK-iOS.git
   Interstellar:
-    :commit: 9ac6f95e19565af8a67324da4090dbfe17303c78
+    :commit: ca22646f5a8449795fba3d3436a045da0aeb5949
     :git: https://github.com/ashfurrow/Interstellar.git
   ISO8601DateFormatter:
     :commit: 1a48b819c85903ded669e74e476aceffebf311fc
@@ -369,7 +428,7 @@ CHECKOUT OPTIONS:
 
 SPEC CHECKSUMS:
   Adjust: 3d11ee5856dd0474d26496f4fa5a110e9f3ec264
-  Aerodramus: 648bab2c441eb6116db823e6301b1f2d4d2b61a0
+  Aerodramus: a23208fd4d76a32ee4ca425a8e29319e6c6a9bdc
   AFNetworkActivityLogger: 121486778117d53b3ab1c61d264b88081d0c3eee
   AFNetworking: 05edc0ac4c4c8cf57bcf4b84be5b0744b6d8e71e
   AFOAuth1Client: 07ccc935ba06ac8d023c16d39a5bdf04bc6f92e1
@@ -378,20 +437,20 @@ SPEC CHECKSUMS:
   ARCollectionViewMasonryLayout: 97cb468434b546b79a98c7c0908447ff803eb85e
   ARGenericTableViewController: 61a0897ba66c35111b5d1cc3b44884282bd3c1a5
   ARTiledImageView: 2db7735f5d3fcb4c859c912834a6a1bf20716377
-  Artsy+UIColors: 31c03c4146f5e6618a9b950f37dfe02dd9ac09a6
-  Artsy+UIFonts: d38c82636e000b1dee31b7bec0268e1841dac17f
-  Artsy+UILabels: 7cb6e290a4f70dddba037b7dbeb21e90b49d7275
+  "Artsy+UIColors": 31c03c4146f5e6618a9b950f37dfe02dd9ac09a6
+  "Artsy+UIFonts": d29579aa105e3709032651fb3145d24f8339e905
+  "Artsy+UILabels": 7cb6e290a4f70dddba037b7dbeb21e90b49d7275
   Artsy-UIButtons: cdcc3ccf4d0d31ee80f45c1d11ffd2d772695b74
-  Bolts: a0058fa3b331c5a1e4402d534f2dae36dbff31e4
+  Bolts: ac6567323eac61e203f6a9763667d0f711be34c8
   CocoaLumberjack: 27ae9abcd376c3e4ee726ecd4adfd7b093ddef3f
   DHCShakeNotifier: 64048427ecaa763f2472d0032f58bf7a10074eee
   EDColor: c83f9a61f9f9b3c23d541f1feb561558e29cb088
-  Emission: d09265166632f16b0968044c5024cdb99bf10169
+  Emission: ece22c8238543667b49ab7d255618ca848072d6d
   Expecta: e1c022fcd33910b6be89c291d2775b3fe27a89fe
-  Expecta+Snapshots: c343f410c7a6392f3e22e78f94c44b6c0749a516
+  "Expecta+Snapshots": c343f410c7a6392f3e22e78f94c44b6c0749a516
   Extraction: 612cf0866f74d4c0dd616677ff24146efa200958
-  FBSDKCoreKit: d2aaed5e9ab7d8d6301c533376a1fbff1cf3deb5
-  FBSDKLoginKit: 699ff169080e3072de4b9b0faca90bf23dc36deb
+  FBSDKCoreKit: 54db4c581123745d25a9f7c1608020b3aeabd118
+  FBSDKLoginKit: 95a252ddffd6919c0f132a02292f0824616d8709
   FBSnapshotTestCase: 094f9f314decbabe373b87cc339bea235a63e07a
   FLKAutoLayout: 106b14dbae09d32c6730190f4e78a959759ba4a4
   Forgeries: 64ced144ea8341d89a7eec9d1d7986f0f1366250
@@ -403,7 +462,7 @@ SPEC CHECKSUMS:
   JLRoutes: 63d64c28b26bcdeb5f5b29e436f75b8358e8d6d1
   JSDecoupledAppDelegate: 5905e144cbe6e0c889248eebbee6784510f315e1
   JWTDecode: 178e47e5d28d3abcff778bacced8342858cd6cb5
-  Keys: 9c35bf00f612ee1d48556f4a4b9b4551e224e90f
+  Keys: af65e23feef2a047b3277b1ef0399f1209ef9d46
   KSCrash: e4cda5c8612c5f9478defcf43418f24870d313f4
   KSDeferred: e72d005162986b2978e1e2eee17fbce1c6876cfe
   Mantle: a197db93e0f1e36194b1fdbc078219a8492eaef2
@@ -428,15 +487,15 @@ SPEC CHECKSUMS:
   SentryReactNative: 3dff4e9bd82aa581dc64ff8d2524d7007cea076b
   Specta: ac94d110b865115fe60ff2c6d7281053c6f8e8a2
   SSFadingScrollView: a2f142312afad23585e354a41a6ed337045e1aa3
-  Starscream: df5974ee928b157c8eda8af8de7c620276b7dfcc
-  SwiftyJSON: c2842d878f95482ffceec5709abc3d05680c0220
-  Then: 8496793c8fcac95482b943909b440724c7d8d82c
+  Starscream: f5da93fe6984c77b694366bf7299b7dc63a76f26
+  SwiftyJSON: 070dabdcb1beb81b247c65ffa3a79dbbfb3b48aa
+  Then: ee21c97b85ff6062b9b0080c9abb1eea46743345
   UICKeyChainStore: e81dc3b58d56ffaed61ab6669eb97071e53fc377
-  UIView+BooleanAnimations: a760be9a066036e55f298b7b7350a6cb14cfcd97
+  "UIView+BooleanAnimations": a760be9a066036e55f298b7b7350a6cb14cfcd97
   VCRURLConnection: accd771ebd4be11183a3e4d5a4403f180a9a235e
-  XCTest+OHHTTPStubSuiteCleanUp: 4469ec8863c6bc022c5089a9b94233eb3416c5ee
+  "XCTest+OHHTTPStubSuiteCleanUp": 4469ec8863c6bc022c5089a9b94233eb3416c5ee
   Yoga: 2efb0a2b24e5c17cf1aea8c785d4428bd077f667
 
-PODFILE CHECKSUM: 60550150ccfae7600da677dbbf689902c701ff8e
+PODFILE CHECKSUM: 8d0f9b31f28cd90ca0cc04927d540b795cfede18
 
-COCOAPODS: 1.3.1
+COCOAPODS: 1.5.0.beta.1

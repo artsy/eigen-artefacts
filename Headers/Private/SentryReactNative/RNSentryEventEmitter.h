@@ -1,0 +1,1 @@
+../../../SentryReactNative/ios/RNSentryEventEmitter.h

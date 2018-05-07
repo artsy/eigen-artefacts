@@ -1,4 +1,4 @@
-@import ISO8601DateFormatter;
+#import <ISO8601DateFormatter/ISO8601DateFormatter.h>
 
 #import "Aerodramus.h"
 #import "AeroRouter.h"

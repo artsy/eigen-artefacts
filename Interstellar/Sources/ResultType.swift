@@ -38,7 +38,7 @@ extension Result {
     
     public init(block: (Void) throws -> T) {
         do {
-            self = try .success(block())
+            self = try .success(block(Void()))
         } catch let e {
             self = .error(e)
         }

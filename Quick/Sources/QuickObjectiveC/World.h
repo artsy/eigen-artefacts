@@ -1,4 +1,4 @@
-#import <Quick/Quick-Swift.h>
+#import "Quick-Swift.h"
 
 @class ExampleGroup;
 @class ExampleMetadata;

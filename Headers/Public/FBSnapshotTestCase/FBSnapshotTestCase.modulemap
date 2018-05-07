@@ -1,0 +1,6 @@
+module FBSnapshotTestCase [system] {
+  umbrella header "FBSnapshotTestCase-umbrella.h"
+
+  export *
+  module * { export * }
+}

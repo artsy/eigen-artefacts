@@ -1,0 +1,1 @@
+../../../Adjust/Adjust/ADJSdkClickHandler.h

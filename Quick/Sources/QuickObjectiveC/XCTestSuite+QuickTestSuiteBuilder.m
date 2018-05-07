@@ -1,6 +1,6 @@
 #import <XCTest/XCTest.h>
 #import <objc/runtime.h>
-#import <Quick/Quick-Swift.h>
+#import "Quick-Swift.h"
 
 @interface XCTestSuite (QuickTestSuiteBuilder)
 @end

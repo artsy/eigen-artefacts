@@ -1,5 +1,5 @@
 #import <Nimble/DSL.h>
-#import <Nimble/Nimble-Swift.h>
+#import "Nimble-Swift.h"
 
 SWIFT_CLASS("_TtC6Nimble7NMBWait")
 @interface NMBWait : NSObject

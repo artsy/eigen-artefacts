@@ -92,8 +92,9 @@ typedef NS_ENUM(NSUInteger, FBSDKInternalUtilityVersionShift)
   static NSBundle *bundle;
   static dispatch_once_t onceToken;
   dispatch_once(&onceToken, ^{
-    NSString *stringsBundlePath = [[NSBundle mainBundle] pathForResource:@"FacebookSDKStrings"
-                                                                  ofType:@"bundle"];
+    NSString *stringsBundlePath = [[NSBundle bundleForClass:[FBSDKApplicationDelegate class]]
+                                   pathForResource:@"FacebookSDKStrings"
+                                   ofType:@"bundle"];
     bundle = [NSBundle bundleWithPath:stringsBundlePath] ?: [NSBundle mainBundle];
   });
   return bundle;
@@ -109,11 +110,11 @@ typedef NS_ENUM(NSUInteger, FBSDKInternalUtilityVersionShift)
   return value;
 }
 
-+ (unsigned long)currentTimeInMilliseconds
++ (uint64_t)currentTimeInMilliseconds
 {
   struct timeval time;
   gettimeofday(&time, NULL);
-  return (time.tv_sec * 1000) + (time.tv_usec / 1000);
+  return ((uint64_t)time.tv_sec * 1000) + (time.tv_usec / 1000);
 }
 
 + (BOOL)dictionary:(NSMutableDictionary *)dictionary
@@ -187,7 +188,7 @@ setJSONStringForObject:(id)object
   }
   host = [NSString stringWithFormat:@"%@%@", hostPrefix ?: @"", host ?: @""];
 
-  NSString *version = defaultVersion ?: FBSDK_TARGET_PLATFORM_VERSION;
+  NSString *version = defaultVersion ?: [FBSDKSettings graphAPIVersion];
   if ([version length]) {
     version = [@"/" stringByAppendingString:version];
   }
@@ -198,6 +199,10 @@ setJSONStringForObject:(id)object
         [versionScanner scanInteger:NULL] &&
         [versionScanner scanString:@"." intoString:NULL] &&
         [versionScanner scanInteger:NULL]) {
+      [FBSDKLogger singleShotLogEntry:FBSDKLoggingBehaviorDeveloperErrors
+                             logEntry:[NSString stringWithFormat:@"Invalid Graph API version:%@, assuming %@ instead",
+                                       version,
+                                       [FBSDKSettings graphAPIVersion]]];
       version = nil;
     }
     if (![path hasPrefix:@"/"]) {
@@ -468,7 +473,7 @@ static NSMapTable *_transientObjects;
   }
 }
 
-+ (UIViewController *)viewControllerforView:(UIView*)view
++ (UIViewController *)viewControllerForView:(UIView *)view
 {
   UIResponder *responder = view.nextResponder;
   while (responder) {
@@ -488,11 +493,7 @@ static NSMapTable *_transientObjects;
   dispatch_once(&onceToken, ^{
     [FBSDKInternalUtility checkRegisteredCanOpenURLScheme:FBSDK_CANOPENURL_FACEBOOK];
   });
-  NSURLComponents *components = [[NSURLComponents alloc] init];
-  components.scheme = FBSDK_CANOPENURL_FACEBOOK;
-  components.path = @"/";
-  return [[UIApplication sharedApplication]
-          canOpenURL:components.URL];
+  return [self _canOpenURLScheme:FBSDK_CANOPENURL_FACEBOOK];
 }
 
 + (BOOL)isMessengerAppInstalled
@@ -501,12 +502,16 @@ static NSMapTable *_transientObjects;
   dispatch_once(&onceToken, ^{
     [FBSDKInternalUtility checkRegisteredCanOpenURLScheme:FBSDK_CANOPENURL_MESSENGER];
   });
-  NSURLComponents *components = [[NSURLComponents alloc] init];
-  components.scheme = FBSDK_CANOPENURL_MESSENGER;
-  components.path = @"/";
-  return [[UIApplication sharedApplication]
-          canOpenURL:components.URL];
+  return [self _canOpenURLScheme:FBSDK_CANOPENURL_MESSENGER];
+}
 
++ (BOOL)isMSQRDPlayerAppInstalled
+{
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    [FBSDKInternalUtility checkRegisteredCanOpenURLScheme:FBSDK_CANOPENURL_MSQRD_PLAYER];
+  });
+  return [self _canOpenURLScheme:FBSDK_CANOPENURL_MSQRD_PLAYER];
 }
 
 #pragma mark - Object Lifecycle
@@ -578,6 +583,14 @@ static NSMapTable *_transientObjects;
   return object;
 }
 
++ (BOOL)_canOpenURLScheme:(NSString *)scheme
+{
+  NSURLComponents *components = [[NSURLComponents alloc] init];
+  components.scheme = scheme;
+  components.path = @"/";
+  return [[UIApplication sharedApplication] canOpenURL:components.URL];
+}
+
 + (void)validateAppID
 {
   if (![FBSDKSettings appID]) {
@@ -585,6 +598,16 @@ static NSMapTable *_transientObjects;
                        @"FacebookAppID to the Info.plist or call [FBSDKSettings setAppID:].";
     @throw [NSException exceptionWithName:@"InvalidOperationException" reason:reason userInfo:nil];
   }
+}
+
++ (NSString *)validateRequiredClientAccessToken {
+  if (![FBSDKSettings clientToken]) {
+    NSString *reason = @"ClientToken is required to be set for this operation. "
+    @"Set the FacebookClientToken in the Info.plist or call [FBSDKSettings setClientToken:]. "
+    @"You can find your client token in your App Settings -> Advanced.";
+    @throw [NSException exceptionWithName:@"InvalidOperationException" reason:reason userInfo:nil];
+  }
+  return [NSString stringWithFormat:@"%@|%@", [FBSDKSettings appID], [FBSDKSettings clientToken]];
 }
 
 + (void)validateURLSchemes
@@ -597,16 +620,64 @@ static NSMapTable *_transientObjects;
   }
 }
 
++ (void)validateFacebookReservedURLSchemes
+{
+  for (NSString * fbUrlScheme in @[FBSDK_CANOPENURL_FACEBOOK, FBSDK_CANOPENURL_MESSENGER, FBSDK_CANOPENURL_FBAPI, FBSDK_CANOPENURL_SHARE_EXTENSION]) {
+    if ([self isRegisteredURLScheme:fbUrlScheme]) {
+      NSString *reason = [NSString stringWithFormat:@"%@ is registered as a URL scheme. Please move the entry from CFBundleURLSchemes in your Info.plist to LSApplicationQueriesSchemes. If you are trying to resolve \"canOpenURL: failed\" warnings, those only indicate that the Facebook app is not installed on your device or simulator and can be ignored.", fbUrlScheme];
+      @throw [NSException exceptionWithName:@"InvalidOperationException" reason:reason userInfo:nil];
+    }
+  }
+}
+
++ (UIWindow *)findWindow
+{
+  UIWindow *window = [UIApplication sharedApplication].keyWindow;
+  if (window == nil || window.windowLevel != UIWindowLevelNormal) {
+    for (window in [UIApplication sharedApplication].windows) {
+      if (window.windowLevel == UIWindowLevelNormal) {
+        break;
+      }
+    }
+  }
+  if (window == nil) {
+    [FBSDKLogger singleShotLogEntry:FBSDKLoggingBehaviorDeveloperErrors
+                       formatString:@"Unable to find a valid UIWindow", nil];
+  }
+  return window;
+}
 
 + (UIViewController *)topMostViewController
 {
-  UIViewController *topController = [UIApplication sharedApplication].keyWindow.rootViewController;
+  UIWindow *keyWindow = [self findWindow];
+  // SDK expects a key window at this point, if it is not, make it one
+  if (keyWindow !=  nil && !keyWindow.isKeyWindow) {
+    [FBSDKLogger singleShotLogEntry:FBSDKLoggingBehaviorDeveloperErrors
+                       formatString:@"Unable to obtain a key window, marking %@ as keyWindow", keyWindow.description];
+    [keyWindow makeKeyWindow];
+  }
+
+  UIViewController *topController = keyWindow.rootViewController;
   while (topController.presentedViewController) {
     topController = topController.presentedViewController;
   }
   return topController;
 }
 
++ (NSString *)hexadecimalStringFromData:(NSData *)data
+{
+  NSUInteger dataLength = data.length;
+  if (dataLength == 0) {
+    return nil;
+  }
+
+  const unsigned char *dataBuffer = data.bytes;
+  NSMutableString *hexString  = [NSMutableString stringWithCapacity:(dataLength * 2)];
+  for (int i = 0; i < dataLength; ++i) {
+    [hexString appendFormat:@"%02x", dataBuffer[i]];
+  }
+  return [hexString copy];
+}
 
 + (BOOL)isRegisteredURLScheme:(NSString *)urlScheme {
   static dispatch_once_t fetchBundleOnce;
@@ -643,11 +714,7 @@ static NSMapTable *_transientObjects;
 
   if (![self isRegisteredCanOpenURLScheme:urlScheme]){
     NSString *reason = [NSString stringWithFormat:@"%@ is missing from your Info.plist under LSApplicationQueriesSchemes and is required for iOS 9.0", urlScheme];
-#ifdef __IPHONE_9_0
-    @throw [NSException exceptionWithName:@"InvalidOperationException" reason:reason userInfo:nil];
-#else
     [FBSDKLogger singleShotLogEntry:FBSDKLoggingBehaviorDeveloperErrors logEntry:reason];
-#endif
   }
 }
 
@@ -690,6 +757,19 @@ static NSMapTable *_transientObjects;
     }
   }
   return YES;
+}
+
++ (Class)resolveBoltsClassWithName:(NSString *)className;
+{
+  Class clazz = NSClassFromString(className);
+  if (clazz == nil) {
+    NSString *message = [NSString stringWithFormat:@"Unable to load class %@. Did you link Bolts.framework?", className];
+    @throw [NSException exceptionWithName:NSInternalInconsistencyException
+                                   reason:message
+                                 userInfo:nil];
+  }
+
+  return clazz;
 }
 
 @end
