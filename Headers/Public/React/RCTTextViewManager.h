@@ -1,1 +1,1 @@
-../../../React/Libraries/Text/RCTTextViewManager.h
+../../../React/Libraries/Text/Text/RCTTextViewManager.h

@@ -1,0 +1,1 @@
+../../../React/Libraries/Text/BaseText/RCTBaseTextViewManager.h

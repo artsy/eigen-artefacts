@@ -1,4 +1,4 @@
-module Nimble_Snapshots [system] {
+module Nimble_Snapshots {
   umbrella header "Nimble-Snapshots-umbrella.h"
 
   export *

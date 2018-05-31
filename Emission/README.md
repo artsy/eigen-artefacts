@@ -18,13 +18,13 @@ This is a core [Artsy Mobile](https://github.com/artsy/mobile) OSS project, alon
 
 Don't know what Artsy is? Check out [this overview](https://github.com/artsy/meta/blob/master/meta/what_is_artsy.md) and [more](https://github.com/artsy/meta/blob/master/README.md), or read our objc.io on [team culture](https://www.objc.io/issues/22-scale/artsy).
 
-Want to know more about Emission? Read the [mobile](http://artsy.github.io/blog/categories/mobile/) blog posts, or [Emission's](http://artsy.github.io/blog/categories/emission/) / [React Native's](http://artsy.github.io/blog/categories/reactnative/) specifically.
+Want to know more about Emission? Read the [mobile](http://artsy.github.io/blog/categories/mobile/) blog posts, or [Emission's](http://artsy.github.io/blog/categories/emission/) / [React Native's](http://artsy.github.io/blog/categories/reactnative/) specifically. Also check out [the map to Emission](docs/map_to_emission.md) to oriented yourself to the codebase.
 
 ### Installation
 
 _Automated install_:
 
-* **OSS**: `git clone https://github.com/artsy/emission.git && cd emission && make setup && make oss` 
+* **OSS**: `git clone https://github.com/artsy/emission.git && cd emission && make setup && make oss`
 * **Artsy**: `git clone https://github.com/artsy/emission.git && cd emission && make setup && make artsy`. Then look in 1password for the Eigen keys.
 
 _Manual install_
@@ -91,7 +91,9 @@ Unhandled JS Exception: RelayQL: Unexpected invocation at runtime. Either the Ba
 failed to identify this call site. Make sure it is being used verbatim as `Relay.QL`
 ```
 
-### Deployment
+### Deploying Emission
+
+You must have [Metaphysics][metaphysics] checked out in a folder adjacent to Emission's code. So there should be `~/code/emission` and `~/code/metaphysics`.
 
 1. Ensure that the React version required by Emission has been published to [our spec-repo][spec-repo].
    Assuming no breaking changes in RN's folder structures, you can run `make update_specs_repos`.
@@ -100,6 +102,10 @@ failed to identify this call site. Make sure it is being used verbatim as `Relay
 4. For non-beta releases, use either `npm version patch`, `npm version minor`, or `npm version major`. For
    beta releases use `npm version prerelease`.
 5. If integrating in Eigen consult the docs [on updating Emission](/artsy/eigen/blob/master/docs/updating_emission.md)
+
+### Automated Emission App Deploys
+
+The Emission app (in `Example/`) is deployed automatically to TestFlight once a week through [emission-nebula](https://github.com/artsy/emission-nebula). See that repo for more details.
 
 ### Resources
 
@@ -149,3 +155,4 @@ failed to identify this call site. Make sure it is being used verbatim as `Relay
 [glossary-yarn]: http://artsy.github.io/blog/2016/11/14/JS-Glossary/#yarn
 [blog here]: http://artsy.github.io/blog/2016/08/24/On-Emission/
 [spec-repo]: https://github.com/artsy/Specs/tree/master/React
+[metaphysics]: https://github.com/artsy/metaphysics

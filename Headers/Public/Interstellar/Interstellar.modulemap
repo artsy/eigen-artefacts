@@ -1,4 +1,4 @@
-module Interstellar [system] {
+module Interstellar {
   umbrella header "Interstellar-umbrella.h"
 
   export *

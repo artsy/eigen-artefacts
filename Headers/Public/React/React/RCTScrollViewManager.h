@@ -1,1 +1,1 @@
-../../../../React/React/Views/RCTScrollViewManager.h
+../../../../React/React/Views/ScrollView/RCTScrollViewManager.h

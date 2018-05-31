@@ -1,1 +1,1 @@
-../../../React/Libraries/Text/RCTBackedTextInputViewProtocol.h
+../../../React/Libraries/Text/TextInput/RCTBackedTextInputViewProtocol.h

@@ -1,0 +1,1 @@
+../../../../React/React/Base/RCTManagedPointer.h

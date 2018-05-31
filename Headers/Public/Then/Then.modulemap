@@ -1,4 +1,4 @@
-module Then [system] {
+module Then {
   umbrella header "Then-umbrella.h"
 
   export *

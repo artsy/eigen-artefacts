@@ -1,1 +1,1 @@
-../../../React/Libraries/Text/RCTBackedTextInputDelegateAdapter.h
+../../../React/Libraries/Text/TextInput/RCTBackedTextInputDelegateAdapter.h

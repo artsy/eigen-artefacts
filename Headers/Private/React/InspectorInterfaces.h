@@ -1,1 +1,1 @@
-../../../React/ReactCommon/jschelpers/InspectorInterfaces.h
+../../../React/ReactCommon/jsinspector/InspectorInterfaces.h

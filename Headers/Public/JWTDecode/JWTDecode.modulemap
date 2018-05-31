@@ -1,4 +1,4 @@
-module JWTDecode [system] {
+module JWTDecode {
   umbrella header "JWTDecode-umbrella.h"
 
   export *

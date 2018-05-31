@@ -1,1 +1,1 @@
-../../../Yoga/ReactCommon/yoga/yoga/Yoga.h
+../../../yoga/ReactCommon/yoga/yoga/Yoga.h
